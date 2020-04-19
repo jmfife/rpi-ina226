@@ -115,10 +115,10 @@ int main() {
 	//printf("Manufacturer 0x%X Chip 0x%X\n",read16(fd,INA226_REG_MANUFACTURER),read16(fd,INA226_REG_DIE_ID));
 
 	// Shunt resistor (Ohm), Max Current (Amp)
-	ina226_calibrate(0.1, 1.0);
+	ina226_calibrate(0.009055, 20.0);
 
 	// Header
-	printf("date,time,timestamp,bus voltage(V),current (mA),power (mW),shunt voltage (mV),energy (kWh year)\n,price year");
+	printf("Time, timestamp, bus voltage(V), current (mA), power (mW), shunt voltage (mV), annual energy (kWh), cost ($)\n");
 
 	// BUS / SHUNT / Averages / Mode
 	ina226_configure(INA226_TIME_8MS, INA226_TIME_8MS, INA226_AVERAGES_16, INA226_MODE_SHUNT_BUS_CONTINUOUS);
@@ -135,12 +135,12 @@ int main() {
 		// Timestamp / Date
 		time(&rawtime);
 		struct tm *info = localtime( &rawtime );
-		strftime(buffer,80,"%Y-%m-%d,%H:%M:%S", info);
+		strftime(buffer,80,"%Y-%m-%d %H:%M:%S", info);
 
-		printf("%s,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.2f\n",buffer,(int)rawtime,voltage,current,voltage*current,shunt,energy,price);
+		printf("%s, %d, %.3f, %.3f, %.3f, %.3f, %.3f, %.2f\n",buffer,(int)rawtime,voltage,current,voltage*current,shunt,energy,price);
 		fflush(NULL);
 
-		usleep(100000);
+		usleep(1000000);
 	}
 
 	ina226_disable();
