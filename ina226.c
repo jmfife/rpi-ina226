@@ -100,11 +100,12 @@ inline void ina226_disable()
 }
 
 int main() {
-	const float kwh_price = 0.13;
-	float voltage,current,power,shunt,energy,price;
+	// const float kwh_price = 0.13;
+	float voltage, current, power, shunt;
+	// float energy, price;
 	time_t rawtime;
-	char buffer[80];
-	int trig=1;
+	// char buffer[80];
+	// int trig=1;
 
 	fd = wiringPiI2CSetup(INA226_ADDRESS);
 	if(fd < 0) {
@@ -118,7 +119,7 @@ int main() {
 	ina226_calibrate(0.009055, 20.0);
 
 	// Header
-	printf("Time, timestamp, bus voltage(V), current (mA), power (mW), shunt voltage (mV), annual energy (kWh), cost ($)\n");
+	//printf("Time, timestamp, bus voltage(V), current (mA), power (mW), shunt voltage (mV), annual energy (kWh), cost ($)\n");
 
 	// BUS / SHUNT / Averages / Mode
 	ina226_configure(INA226_TIME_8MS, INA226_TIME_8MS, INA226_AVERAGES_16, INA226_MODE_SHUNT_BUS_CONTINUOUS);
@@ -129,19 +130,19 @@ int main() {
 
 		// Read
 		ina226_read(&voltage, &current, &power, &shunt);
-		energy = voltage*current*24*365.25/1000000;
-		price = energy * kwh_price;
+		// energy = voltage*current*24*365.25/1000000;
+		// price = energy * kwh_price;
 
 		// Timestamp / Date
 		time(&rawtime);
-		struct tm *info = localtime( &rawtime );
-		strftime(buffer,80,"%Y-%m-%d %H:%M:%S", info);
+		// struct tm *info = localtime( &rawtime );
+		// strftime(buffer,80,"%Y-%m-%d %H:%M:%S", info);
 
 		// printf("%s, %d, %.3f, %.3f, %.3f, %.3f, %.3f, %.2f\n",buffer,(int)rawtime,voltage,current,voltage*current,shunt,energy,price);
 		printf("{\"ts\": %d, \"Voltage_V\": %.3f, \"Current_mA\": %.3f}\n", (int)rawtime, voltage, current);
 		fflush(NULL);
 
-		usleep(1000000);
+		usleep(5000000);
 	}
 
 	ina226_disable();
