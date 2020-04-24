@@ -137,7 +137,8 @@ int main() {
 		struct tm *info = localtime( &rawtime );
 		strftime(buffer,80,"%Y-%m-%d %H:%M:%S", info);
 
-		printf("%s, %d, %.3f, %.3f, %.3f, %.3f, %.3f, %.2f\n",buffer,(int)rawtime,voltage,current,voltage*current,shunt,energy,price);
+		// printf("%s, %d, %.3f, %.3f, %.3f, %.3f, %.3f, %.2f\n",buffer,(int)rawtime,voltage,current,voltage*current,shunt,energy,price);
+		printf("{\"ts\": %d, \"Voltage_V\": %.3f, \"Current_mA\": %.3f}\n", (int)rawtime, voltage, current);
 		fflush(NULL);
 
 		usleep(1000000);
