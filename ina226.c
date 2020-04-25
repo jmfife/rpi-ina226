@@ -20,12 +20,14 @@ const char *argp_program_bug_address = "https://github.com/jmfife/rpi-ina226";
 static char doc[] = "Use INA226 chip in conjunction with a Raspberry Pi to measure DC voltage and current";
 static char args_doc[] = "";
 static struct argp_option options[] = {
-	{ "emulate", 'e', 0, 0, "Run in emulation mode", 0},
+	{ "emulate",    'e',   0,       0,  "Run in emulation mode",    0},
+	{ "sph",        's',   "SPH",   0,  "Samples per hour",         0},
 	{ 0 }
 };
 
 struct arguments {
 	bool emulate;
+	float samples_per_hour;
 };
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state) {
@@ -33,6 +35,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 	struct arguments *arguments = state->input;
 	switch (key) {
 		case 'e': arguments->emulate = true; break;
+		case 's': arguments->samples_per_hour = arg; break;
 		case ARGP_KEY_ARG:
 			return 0;
 		default:
@@ -127,15 +130,20 @@ int main(int argc, char *argv[]) {
 	struct arguments arguments;
 
 	arguments.emulate = false;
+    arguments.samples_per_hour = 60.0*12.0;
 
 	argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
-	// const float kwh_price = 0.13;
 	float voltage, current, power, shunt;
-	// float energy, price;
 	time_t rawtime;
-	// char buffer[80];
-	// int trig=1;
+    int seconds_per_sample;
+    int seconds_to_next_sample;
+    int interval, current_interval
+
+    /* set up timer */
+    seconds_per_sample = 3600.0 / samples_per_hour;
+    current_interval = 0; 	// starting interval just needs to be != the true current interval
+
 
 	if(!(arguments.emulate)) {
 		fd = wiringPiI2CSetup(INA226_ADDRESS);
@@ -146,42 +154,40 @@ int main(int argc, char *argv[]) {
 
 		//printf("Manufacturer 0x%X Chip 0x%X\n",read16(fd,INA226_REG_MANUFACTURER),read16(fd,INA226_REG_DIE_ID));
 
-		// Shunt resistor (Ohm), Max Current (Amp)
 		ina226_calibrate(0.009055, 100.0);
 
 		// BUS / SHUNT / Averages / Mode
 		ina226_configure(INA226_TIME_8MS, INA226_TIME_8MS, INA226_AVERAGES_16, INA226_MODE_SHUNT_BUS_CONTINUOUS);
 	}
 
-	// Header
-	//printf("Time, timestamp, bus voltage(V), current (mA), power (mW), shunt voltage (mV), annual energy (kWh), cost ($)\n");
-
 	for(;;) {
 		//ina226_configure(INA226_TIME_8MS, INA226_TIME_8MS, INA226_AVERAGES_16, INA226_MODE_SHUNT_BUS_TRIGGERED);
 		//ina226_wait();
 
-		if(!(arguments.emulate)) {
-			// Read
-			ina226_read(&voltage, &current, &power, &shunt);
-			// energy = voltage*current*24*365.25/1000000;
-			// price = energy * kwh_price;
-		 } else {
-			voltage = 12.0;
-			current = 1000.0;
-			power = 12000.0;
-			shunt = 9.055;
-		}
+        time(&rawtime);
+        interval = (int) rawtime / seconds_per_sample;
+        if (interval != current_interval) {
+        	current_interval = interval
+	        seconds_to_next_sample = seconds_per_sample - (rawtime % seconds_per_sample);
+	        sleep(seconds_to_next_sample);
 
-		// Timestamp / Date
-		time(&rawtime);
-		// struct tm *info = localtime( &rawtime );
-		// strftime(buffer,80,"%Y-%m-%d %H:%M:%S", info);
+			if(!(arguments.emulate)) {
+				// Read
+				ina226_read(&voltage, &current, &power, &shunt);
+				// energy = voltage*current*24*365.25/1000000;
+				// price = energy * kwh_price;
+			 } else {
+				voltage = 12.0;
+				current = 1000.0;
+				power = 12000.0;
+				shunt = 9.055;
+			}
 
-		// printf("%s, %d, %.3f, %.3f, %.3f, %.3f, %.3f, %.2f\n",buffer,(int)rawtime,voltage,current,voltage*current,shunt,energy,price);
-		printf("{\"ts\": %d, \"Voltage_V\": %.3f, \"Current_mA\": %.3f}\n", (int)rawtime, voltage, current);
-		fflush(NULL);
-
-		usleep(5000000);
+			// NOTE: we can't guarantee resolution greater than 1 second with this code.
+			time(&rawtime);
+			printf("{\"ts\": %d, \"Voltage_V\": %.3f, \"Current_mA\": %.3f}\n", (int)rawtime, voltage, current);
+			fflush(NULL);        	
+        }
 	}
 
 	ina226_disable();
