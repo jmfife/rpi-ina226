@@ -59,10 +59,10 @@ The output is continuous JSON with Voltage in V, Current in mA.
 
 For example:
 ```
-$ ./ina226 
-{"ts": 1587839955, "Voltage_V": 13.323, "Current_mA": 24.451}
-{"ts": 1587839960, "Voltage_V": 13.323, "Current_mA": 27.508}
-{"ts": 1587839965, "Voltage_V": 13.323, "Current_mA": 24.451}
+$ ./ina226 --sph=720
+{"ts": 1587848635.003850, "Voltage_V": 13.286, "Current_mA": 30.564}
+{"ts": 1587848640.003581, "Voltage_V": 13.286, "Current_mA": 30.564}
+{"ts": 1587848645.003553, "Voltage_V": 13.285, "Current_mA": 30.564}
 ```
 
 ## License
