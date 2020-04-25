@@ -18,7 +18,7 @@ $ sudo apt-get install wiringpi i2c-tools libi2c-dev
 $ make
 ```
 
-## Hardware Set-Up\
+## Hardware Set-Up
 
 This should work with any Raspberry Pi Model.
 
@@ -55,15 +55,14 @@ takes longer.
 
 ## Example
 
-The output is continuous CSV with Voltage in V, Current in mA, Power in mW, Shunt Voltage in mV, Energy per year in kWh.
+The output is continuous JSON with Voltage in V, Current in mA.
 
-For example the "Hello World" of a led+resistor connected to USB cable:
-
+For example:
 ```
-date,time,timestamp,bus voltage(V),current (mA),power (mW),shunt voltage (mV),energy (kWh year)
-2019-09-13,21:11:49,1568405509,5.024,19.906,100.003,1.990,0.877
-2019-09-13,21:11:50,1568405510,5.024,19.937,100.156,1.992,0.878
-2019-09-13,21:11:51,1568405511,5.025,19.937,100.181,1.992,0.878
+$ ./ina226 
+{"ts": 1587839955, "Voltage_V": 13.323, "Current_mA": 24.451}
+{"ts": 1587839960, "Voltage_V": 13.323, "Current_mA": 27.508}
+{"ts": 1587839965, "Voltage_V": 13.323, "Current_mA": 24.451}
 ```
 
 ## License
