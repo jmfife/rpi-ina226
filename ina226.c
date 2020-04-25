@@ -20,7 +20,7 @@ const char *argp_program_bug_address = "https://github.com/jmfife/rpi-ina226";
 static char doc[] = "Use INA226 chip in conjunction with a Raspberry Pi to measure DC voltage and current";
 static char args_doc[] = "";
 static struct argp_option options[] = {
-	{ "emulate", 'e', 0, 0, "Run in emulation mode"},
+	{ "emulate", 'e', 0, 0, "Run in emulation mode", 0},
 	{ 0 }
 };
 
@@ -29,11 +29,14 @@ struct arguments {
 };
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state) {
+	(void) arg; /* suppress warning about unused parameter */
 	struct arguments *arguments = state->input;
 	switch (key) {
 		case 'e': arguments->emulate = true; break;
-		case ARGP_KEY_ARG: return 0;
-		default: return ARGP_ERR_UNKNOWN;
+		case ARGP_KEY_ARG:
+			return 0;
+		default:
+			return ARGP_ERR_UNKNOWN;
 	}
 	return 0;
 }
@@ -134,9 +137,8 @@ int main(int argc, char *argv[]) {
 	// char buffer[80];
 	// int trig=1;
 
-	if !arguments.emulate {
+	if(!(arguments.emulate)) {
 		fd = wiringPiI2CSetup(INA226_ADDRESS);
-		}
 		if(fd < 0) {
 			printf("Device not found");
 			return -1;
@@ -154,16 +156,21 @@ int main(int argc, char *argv[]) {
 	// Header
 	//printf("Time, timestamp, bus voltage(V), current (mA), power (mW), shunt voltage (mV), annual energy (kWh), cost ($)\n");
 
-	for(;;){
+	for(;;) {
 		//ina226_configure(INA226_TIME_8MS, INA226_TIME_8MS, INA226_AVERAGES_16, INA226_MODE_SHUNT_BUS_TRIGGERED);
 		//ina226_wait();
 
-		if !arguments.emulate {
+		if(!(arguments.emulate)) {
 			// Read
 			ina226_read(&voltage, &current, &power, &shunt);
 			// energy = voltage*current*24*365.25/1000000;
 			// price = energy * kwh_price;
-		 }
+		 } else {
+			voltage = 12.0;
+			current = 1000.0;
+			power = 12000.0;
+			shunt = 9.055;
+		}
 
 		// Timestamp / Date
 		time(&rawtime);
