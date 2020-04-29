@@ -167,13 +167,13 @@ int main(int argc, char *argv[]) {
 		//ina226_configure(INA226_TIME_8MS, INA226_TIME_8MS, INA226_AVERAGES_16, INA226_MODE_SHUNT_BUS_TRIGGERED);
 		//ina226_wait();
 
-	        gettimeofday(&rawtimeval, NULL);
-		rawtimeval_sec = (double) rawtimeval.tv_sec + (double) rawtimeval.tv_usec / 1e6;
-	        interval = (unsigned long) (rawtimeval_sec / seconds_per_sample);
-	        if (interval != current_interval) {
-	        	current_interval = interval;
-		        seconds_to_next_sample = seconds_per_sample - fmod(rawtimeval_sec, seconds_per_sample);
-		        usleep(seconds_to_next_sample*1e6);
+			gettimeofday(&rawtimeval, NULL);
+			rawtimeval_sec = (double) rawtimeval.tv_sec + (double) rawtimeval.tv_usec / 1e6;
+			interval = (unsigned long) (rawtimeval_sec / seconds_per_sample);
+			if (interval != current_interval) {
+				current_interval = interval;
+				seconds_to_next_sample = seconds_per_sample - fmod(rawtimeval_sec, seconds_per_sample);
+				usleep(seconds_to_next_sample*1e6);
 			if(!(arguments.emulate)) {
 				ina226_read(&voltage, &current, &power, &shunt);
 			 } else {
@@ -186,7 +186,7 @@ int main(int argc, char *argv[]) {
 			rawtimeval_sec = (double) rawtimeval.tv_sec + (double) rawtimeval.tv_usec / 1e6;
 			printf("{\"ts\": %f, \"Voltage_V\": %.3f, \"Current_mA\": %.3f}\n", rawtimeval_sec, voltage, current);
 			fflush(NULL);
-	 	}
+		}
 	}
 
 	ina226_disable();
