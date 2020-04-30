@@ -100,22 +100,22 @@ void ina226_wait() {
 
 void ina226_read(float *voltage, float *current, float *power, float* shunt_voltage) {
 	if (voltage) {
-		uint16_t voltage_reg = read16(fd,INA226_REG_BUS_VOLTAGE);
+		uint16_t voltage_reg = read16(fd, INA226_REG_BUS_VOLTAGE);
 		*voltage = (float) voltage_reg * 1.25e-3;
 	}
 
 	if (current) {
-		int16_t current_reg = (int16_t) read16(fd,INA226_REG_CURRENT);
+		int16_t current_reg = (int16_t) read16(fd, INA226_REG_CURRENT);
 		*current = (float) current_reg * 1000.0 * current_lsb;
 	}
 
 	if (power) {
-		int16_t power_reg = (int16_t) read16(fd,INA226_REG_POWER);
+		int16_t power_reg = (int16_t) read16(fd, INA226_REG_POWER);
 		*power = (float) power_reg * 25000.0 * current_lsb;
 	}
 
 	if (shunt_voltage) {
-		int16_t shunt_voltage_reg = (int16_t) read16(fd,INA226_REG_SHUNT_VOLTAGE);
+		int16_t shunt_voltage_reg = (int16_t) read16(fd, INA226_REG_SHUNT_VOLTAGE);
 		*shunt_voltage = (float) shunt_voltage_reg * 2.5e-3;
 	}
 }
@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
 	struct arguments arguments;
 
 	arguments.emulate = false;
-	arguments.samples_per_hour = 360.0;
+	arguments.samples_per_hour = 60.0;
 
 	argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
