@@ -22,22 +22,31 @@ const char *argp_program_bug_address = "https://github.com/jmfife/rpi-ina226";
 static char doc[] = "Use a Raspberry Pi with an INA226 chip to measure DC voltage and current";
 static char args_doc[] = "";
 static struct argp_option options[] = {
-	{ "emulate",    'e',   0,       0,  "Run in emulation mode",    0},
-	{ "sph",        's',   "SPH",   0,  "Samples per hour",         0},
+	{ "emulate",    'e',   0,       0,  "Emulation mode",  			  			0},
+	{ "sph",        's',   "SPH",   0,  "Samples per hour",         			0},
+	{ "interval",   'i',   0,       0,  "Interval mode",		     			0},
+	{ "iph",        'p',   "IPH",   0,  "Intervals per hour (interval mode)",   0},
+	{ "spi",        'k',   "SPI",   0,  "Samples per interval (interval mode)", 0},
 	{ 0 }
 };
 
 struct arguments {
-	bool emulate;
-	float samples_per_hour;
+	bool emulate_mode;
+	int samples_per_hour;
+	bool interval_mode;
+	int intervals_per_hour;
+	int samples_per_interval;
 };
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 	(void) arg; /* suppress warning about unused parameter */
 	struct arguments *arguments = state->input;
 	switch (key) {
-		case 'e': arguments->emulate = true; break;
-		case 's': arguments->samples_per_hour = atof(arg); break;
+		case 'e': arguments->emulate_mode = true; break;
+		case 's': arguments->samples_per_hour = atoi(arg); break;
+		case 'i': arguments->interval_mode = true; break;
+		case 'p': arguments->intervals_per_hour = atoi(arg); break;
+		case 'k': arguments->samples_per_interval = atoi(arg); break;
 		case ARGP_KEY_ARG:
 			return 0;
 		default:
@@ -131,8 +140,11 @@ inline void ina226_disable() {
 int main(int argc, char *argv[]) {
 	struct arguments arguments;
 
-	arguments.emulate = false;
-	arguments.samples_per_hour = 60.0;
+	arguments.emulate_mode = false;
+	arguments.samples_per_hour = 1800;
+	arguments.interval_mode = false;
+	arguments.intervals_per_hour = 4;
+	arguments.samples_per_interval = (int) 450;
 
 	argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
@@ -140,21 +152,26 @@ int main(int argc, char *argv[]) {
 	struct timeval rawtimeval;
 	double rawtimeval_sec;
 	double seconds_per_sample;
+	// double samples_per_interval;
 	double seconds_to_next_sample;
-	unsigned long interval, current_interval;
+	unsigned long subinterval, current_subinterval;
+	char datastring[1000];
+	char datastring_interval[1000];
 
 	/* set up timer */
-	seconds_per_sample = 3600.0 / arguments.samples_per_hour;
-	current_interval = 0; 	// starting interval just needs to be != the true current interval
-
-	if(!(arguments.emulate)) {
+	if (arguments.interval_mode) {
+		seconds_per_sample = 3600.0 / arguments.intervals_per_hour / arguments.samples_per_interval;
+	} else {
+		seconds_per_sample = 3600.0 / arguments.samples_per_hour;
+	}
+	current_subinterval = 0; 	// starting subinterval just needs to be != the true current interval
+	if(!(arguments.emulate_mode)) {
 		fd = wiringPiI2CSetup(INA226_ADDRESS);
 		if(fd < 0) {
 			printf("Device not found");
 			return -1;
 		}
 	}
-
 
 	//printf("Manufacturer 0x%X Chip 0x%X\n",read16(fd,INA226_REG_MANUFACTURER),read16(fd,INA226_REG_DIE_ID));
 
@@ -169,14 +186,14 @@ int main(int argc, char *argv[]) {
 
 			gettimeofday(&rawtimeval, NULL);
 			rawtimeval_sec = (double) rawtimeval.tv_sec + (double) rawtimeval.tv_usec / 1e6;
-			interval = (unsigned long) (rawtimeval_sec / seconds_per_sample);
-			if (interval != current_interval) {
-				current_interval = interval;
+			subinterval = (unsigned long) (rawtimeval_sec / seconds_per_sample);
+			if (subinterval != current_subinterval) {
+				current_subinterval = subinterval;
 				seconds_to_next_sample = seconds_per_sample - fmod(rawtimeval_sec, seconds_per_sample);
 				usleep(seconds_to_next_sample*1e6);
-			if(!(arguments.emulate)) {
+			if (!(arguments.emulate_mode)) {
 				ina226_read(&voltage, &current, &power, &shunt);
-			 } else {
+			} else {
 				voltage = 12.0;
 				current = 1000.0;
 				power = 12000.0;
@@ -184,8 +201,21 @@ int main(int argc, char *argv[]) {
 			}
 			gettimeofday(&rawtimeval, NULL);
 			rawtimeval_sec = (double) rawtimeval.tv_sec + (double) rawtimeval.tv_usec / 1e6;
-			printf("{\"ts\": %f, \"Voltage_V\": %.3f, \"Current_mA\": %.3f}\n", rawtimeval_sec, voltage, current);
-			fflush(NULL);
+			sprintf(datastring, "{\"V\": %.3f, \"I_mA\": %.3f, \"Is_mV\": %.3f}", voltage, current, shunt);
+			if (arguments.interval_mode) {
+				printf("{\"ts\": %f, \"table\": \"now\", \"data\": %s}\n", rawtimeval_sec, datastring);
+				// Accumulate
+				if ((current_subinterval + 1) % arguments.samples_per_interval == 0) {
+					sprintf(datastring_interval, "{\"V\": %.3f, \"I_mA\": %.3f, \"Is_mV\": %.3f}", voltage, current, shunt);
+					printf("{\"ts\": %f, \"data\": \"table\": \"instant\", \"data\": %s}\n", rawtimeval_sec, datastring);
+					printf("{\"ts\": %f, \"data\": \"table\": \"interval\", \"data\": %s}\n", rawtimeval_sec, datastring_interval);
+					fflush(NULL);
+				}
+				fflush(NULL);
+			} else {
+				printf("{\"ts\": %f, \"data\": %s}\n", rawtimeval_sec, datastring);
+				fflush(NULL);
+			}
 		}
 	}
 
