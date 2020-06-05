@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include "ina226.h"
 #include <sys/time.h>
+#include "AccumAvg.h"
 
 #define INA226_ADDRESS 0x40
 
@@ -40,7 +41,7 @@ struct arguments {
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 	(void) arg; /* suppress warning about unused parameter */
-	struct arguments *arguments = state->input;
+	struct arguments *arguments = (struct arguments *) state->input;
 	switch (key) {
 		case 'e': arguments->emulate_mode = true; break;
 		case 's': arguments->samples_per_hour = atoi(arg); break;
@@ -149,6 +150,9 @@ int main(int argc, char *argv[]) {
 	argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
 	float voltage, current, power, shunt;
+	AccumAvg voltage_avg;
+	int firstinterval = true;
+
 	struct timeval rawtimeval;
 	double rawtimeval_sec;
 	double seconds_per_sample;
@@ -204,11 +208,19 @@ int main(int argc, char *argv[]) {
 			sprintf(datastring, "{\"V\": %.3f, \"I_mA\": %.3f, \"Is_mV\": %.3f}", voltage, current, shunt);
 			if (arguments.interval_mode) {
 				printf("{\"ts\": %f, \"table\": \"now\", \"data\": %s}\n", rawtimeval_sec, datastring);
-				// Accumulate
+				// Handle Interval
+				voltage_avg.accum(rawtimeval_sec, voltage);
 				if ((current_subinterval + 1) % arguments.samples_per_interval == 0) {
-					sprintf(datastring_interval, "{\"V\": %.3f, \"I_mA\": %.3f, \"Is_mV\": %.3f}", voltage, current, shunt);
 					printf("{\"ts\": %f, \"data\": \"table\": \"instant\", \"data\": %s}\n", rawtimeval_sec, datastring);
-					printf("{\"ts\": %f, \"data\": \"table\": \"interval\", \"data\": %s}\n", rawtimeval_sec, datastring_interval);
+					if (firstinterval) {
+						voltage_avg.reset(rawtimeval_sec);
+						firstinterval = false;
+					} else {
+						sprintf(datastring_interval, "{\"V\": %.3f, \"I_mA\": %.3f, \"Is_mV\": %.3f}", voltage_avg.avg(), 
+							current, shunt);
+						voltage_avg.reset();
+						printf("{\"ts\": %f, \"data\": \"table\": \"interval\", \"data\": %s}\n", rawtimeval_sec, datastring_interval);
+					}
 					fflush(NULL);
 				}
 				fflush(NULL);
