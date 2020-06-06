@@ -2,3 +2,4 @@ ina226
 .idea
 *.swp
 
+*.o
