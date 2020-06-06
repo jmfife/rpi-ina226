@@ -28,6 +28,8 @@ static struct argp_option options[] = {
 	{ "interval",   'i',   0,       0,  "Interval mode",		     			0},
 	{ "iph",        'p',   "IPH",   0,  "Intervals per hour (interval mode)",   0},
 	{ "spi",        'k',   "SPI",   0,  "Samples per interval (interval mode)", 0},
+	{ "shuntr",     'r',   "SR",    0,  "Shunt resistance (Ohms)",              0},
+	{ "maxi",       'm',   "MXI",   0,  "Maximum current (A)",                  0},
 	{ 0 }
 };
 
@@ -37,6 +39,8 @@ struct arguments {
 	bool interval_mode;
 	int intervals_per_hour;
 	int samples_per_interval;
+	float shunt_resistance_ohms;
+	float max_current_a;
 };
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state) {
@@ -48,6 +52,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 		case 'i': arguments->interval_mode = true; break;
 		case 'p': arguments->intervals_per_hour = atoi(arg); break;
 		case 'k': arguments->samples_per_interval = atoi(arg); break;
+		case 'r': arguments->shunt_resistance_ohms = atof(arg); break;
+		case 'm': arguments->max_current_a = atof(arg); break;
 		case ARGP_KEY_ARG:
 			return 0;
 		default:
@@ -143,9 +149,11 @@ int main(int argc, char *argv[]) {
 
 	arguments.emulate_mode = false;
 	arguments.samples_per_hour = 1800;
-	arguments.interval_mode = false;
-	arguments.intervals_per_hour = 4;
+	arguments.interval_mode = true;
+	arguments.intervals_per_hour = (int) 4;
 	arguments.samples_per_interval = (int) 450;
+	arguments.shunt_resistance_ohms = 0.00155f;
+	arguments.max_current_a = 200.0f;
 
 	argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
@@ -179,7 +187,8 @@ int main(int argc, char *argv[]) {
 
 	//printf("Manufacturer 0x%X Chip 0x%X\n",read16(fd,INA226_REG_MANUFACTURER),read16(fd,INA226_REG_DIE_ID));
 
-	ina226_calibrate(0.009055, 100.0);
+	ina226_calibrate(arguments.shunt_resistance_ohms, arguments.max_current_a);
+	usleep(50000); // wait 50ms for it to take
 
 	// BUS / SHUNT / Averages / Mode
 	ina226_configure(INA226_TIME_8MS, INA226_TIME_8MS, INA226_AVERAGES_16, INA226_MODE_SHUNT_BUS_CONTINUOUS);
@@ -196,7 +205,7 @@ int main(int argc, char *argv[]) {
 				seconds_to_next_sample = seconds_per_sample - fmod(rawtimeval_sec, seconds_per_sample);
 				usleep(seconds_to_next_sample*1e6);
 			if (!(arguments.emulate_mode)) {
-				ina226_read(&voltage, &current, &power, &shunt);
+				ina226_read(&voltage, &current, NULL, NULL);
 			} else {
 				voltage = 12.0;
 				current = 1000.0;
@@ -205,21 +214,20 @@ int main(int argc, char *argv[]) {
 			}
 			gettimeofday(&rawtimeval, NULL);
 			rawtimeval_sec = (double) rawtimeval.tv_sec + (double) rawtimeval.tv_usec / 1e6;
-			sprintf(datastring, "{\"V\": %.3f, \"I_mA\": %.3f, \"Is_mV\": %.3f}", voltage, current, shunt);
+			sprintf(datastring, "{\"V\": %.3f, \"I_mA\": %.1f}", voltage, current);
 			if (arguments.interval_mode) {
 				printf("{\"ts\": %f, \"table\": \"now\", \"data\": %s}\n", rawtimeval_sec, datastring);
 				// Handle Interval
 				voltage_avg.accum(rawtimeval_sec, voltage);
 				if ((current_subinterval + 1) % arguments.samples_per_interval == 0) {
-					printf("{\"ts\": %f, \"data\": \"table\": \"instant\", \"data\": %s}\n", rawtimeval_sec, datastring);
+					printf("{\"ts\": %f, \"table\": \"instant\", \"data\": %s}\n", rawtimeval_sec, datastring);
 					if (firstinterval) {
 						voltage_avg.reset(rawtimeval_sec);
 						firstinterval = false;
 					} else {
-						sprintf(datastring_interval, "{\"V\": %.3f, \"I_mA\": %.3f, \"Is_mV\": %.3f}", voltage_avg.avg(), 
-							current, shunt);
+						sprintf(datastring_interval, "{\"V\": %.3f, \"I_mA\": %.1f}", voltage_avg.avg(), current);
 						voltage_avg.reset();
-						printf("{\"ts\": %f, \"data\": \"table\": \"interval\", \"data\": %s}\n", rawtimeval_sec, datastring_interval);
+						printf("{\"ts\": %f, \"table\": \"interval\", \"data\": %s}\n", rawtimeval_sec, datastring_interval);
 					}
 					fflush(NULL);
 				}
