@@ -122,12 +122,12 @@ void ina226_read(float *voltage, float *current, float *power, float* shunt_volt
 
 	if (current) {
 		int16_t current_reg = (int16_t) read16(fd, INA226_REG_CURRENT);
-		*current = (float) current_reg * 1000.0 * current_lsb;
+		*current = (float) current_reg * current_lsb;
 	}
 
 	if (power) {
 		int16_t power_reg = (int16_t) read16(fd, INA226_REG_POWER);
-		*power = (float) power_reg * 25000.0 * current_lsb;
+		*power = (float) power_reg * 25.0 * current_lsb;
 	}
 
 	if (shunt_voltage) {
@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
 	argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
 	float voltage, current, power, shunt;
-	AccumAvg voltage_avg;
+	AccumAvg voltage_avg, current_avg, power_avg;
 	int firstinterval = true;
 
 	struct timeval rawtimeval;
@@ -206,26 +206,32 @@ int main(int argc, char *argv[]) {
 				usleep(seconds_to_next_sample*1e6);
 			if (!(arguments.emulate_mode)) {
 				ina226_read(&voltage, &current, NULL, NULL);
+				power = current*voltage;		// use this because the INA226 does not represent power as a signed value
 			} else {
 				voltage = 12.0;
-				current = 1000.0;
-				power = 12000.0;
+				current = 1.0;
+				power = 12.0;
 				shunt = 9.055;
 			}
 			gettimeofday(&rawtimeval, NULL);
 			rawtimeval_sec = (double) rawtimeval.tv_sec + (double) rawtimeval.tv_usec / 1e6;
-			sprintf(datastring, "{\"V\": %.3f, \"I_mA\": %.1f}", voltage, current);
+			sprintf(datastring, "{\"V\": %.3f, \"I\": %.3f, \"P\": %.1f}", voltage, current, power);
 			if (arguments.interval_mode) {
 				printf("{\"ts\": %f, \"table\": \"now\", \"data\": %s}\n", rawtimeval_sec, datastring);
 				// Handle Interval
 				voltage_avg.accum(rawtimeval_sec, voltage);
+				current_avg.accum(rawtimeval_sec, current);
+				power_avg.accum(rawtimeval_sec, power);
 				if ((current_subinterval + 1) % arguments.samples_per_interval == 0) {
 					printf("{\"ts\": %f, \"table\": \"instant\", \"data\": %s}\n", rawtimeval_sec, datastring);
 					if (firstinterval) {
 						voltage_avg.reset(rawtimeval_sec);
+						current_avg.reset(rawtimeval_sec);
+						power_avg.reset(rawtimeval_sec);
 						firstinterval = false;
 					} else {
-						sprintf(datastring_interval, "{\"V\": %.3f, \"I_mA\": %.1f}", voltage_avg.avg(), current);
+						sprintf(datastring_interval, "{\"V\": %.3f, \"I\": %.3f, \"P\": %.1f}", 
+							voltage_avg.avg(), current_avg.avg(), power_avg.avg());
 						voltage_avg.reset();
 						printf("{\"ts\": %f, \"table\": \"interval\", \"data\": %s}\n", rawtimeval_sec, datastring_interval);
 					}
