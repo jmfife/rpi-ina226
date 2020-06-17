@@ -11,6 +11,7 @@
 #include "ina226.h"
 #include <sys/time.h>
 #include "AccumAvg.h"
+#include <limits.h>
 
 #define INA226_ADDRESS 0x40
 
@@ -25,7 +26,7 @@ static char args_doc[] = "";
 static struct argp_option options[] = {
 	{ "emulate",    'e',   0,       0,  "Emulation mode",  			  			0},
 	{ "sph",        's',   "SPH",   0,  "Samples per hour",         			0},
-	{ "interval",   'i',   0,       0,  "Interval mode",		     			0},
+	{ "interval",   'i',   0,       0,  "Interval mode (default)",	   			0},
 	{ "iph",        'p',   "IPH",   0,  "Intervals per hour (interval mode)",   0},
 	{ "spi",        'k',   "SPI",   0,  "Samples per interval (interval mode)", 0},
 	{ "shuntr",     'r',   "SR",    0,  "Shunt resistance (Ohms)",              0},
@@ -163,12 +164,15 @@ int main(int argc, char *argv[]) {
 
 	struct timeval rawtimeval;
 	double rawtimeval_sec;
+	double rawtimeval_intervalstart_sec;
 	double seconds_per_sample;
-	// double samples_per_interval;
 	double seconds_to_next_sample;
-	unsigned long subinterval, current_subinterval;
+	long int subinterval, current_subinterval;
+	long subinterval3;
+	int subintervali;
 	char datastring[1000];
 	char datastring_interval[1000];
+	long int maxlong = LONG_MAX;
 
 	/* set up timer */
 	if (arguments.interval_mode) {
@@ -176,6 +180,10 @@ int main(int argc, char *argv[]) {
 	} else {
 		seconds_per_sample = 3600.0 / arguments.samples_per_hour;
 	}
+	if (seconds_per_sample < 1.0) {
+		seconds_per_sample = 1.0;
+	}
+	printf("seconds_per_sample = %f\n", seconds_per_sample);
 	current_subinterval = 0; 	// starting subinterval just needs to be != the true current interval
 	if(!(arguments.emulate_mode)) {
 		fd = wiringPiI2CSetup(INA226_ADDRESS);
@@ -199,7 +207,9 @@ int main(int argc, char *argv[]) {
 
 			gettimeofday(&rawtimeval, NULL);
 			rawtimeval_sec = (double) rawtimeval.tv_sec + (double) rawtimeval.tv_usec / 1e6;
-			subinterval = (unsigned long) (rawtimeval_sec / seconds_per_sample);
+			subinterval = (unsigned long int) (rawtimeval_sec / seconds_per_sample);
+			// printf("subinterval: %d, %d\n", subinterval, maxlong);
+			// return 0;
 			if (subinterval != current_subinterval) {
 				current_subinterval = subinterval;
 				seconds_to_next_sample = seconds_per_sample - fmod(rawtimeval_sec, seconds_per_sample);
@@ -217,29 +227,29 @@ int main(int argc, char *argv[]) {
 			rawtimeval_sec = (double) rawtimeval.tv_sec + (double) rawtimeval.tv_usec / 1e6;
 			sprintf(datastring, "{\"V\": %.3f, \"I\": %.3f, \"P\": %.1f}", voltage, current, power);
 			if (arguments.interval_mode) {
-				printf("{\"ts\": %f, \"table\": \"now\", \"data\": %s}\n", rawtimeval_sec, datastring);
+				printf("{\"ts\": %.3f, \"table\": \"now\", \"data\": %s}\n", rawtimeval_sec, datastring);
 				// Handle Interval
 				voltage_avg.accum(rawtimeval_sec, voltage);
 				current_avg.accum(rawtimeval_sec, current);
 				power_avg.accum(rawtimeval_sec, power);
 				if ((current_subinterval + 1) % arguments.samples_per_interval == 0) {
-					printf("{\"ts\": %f, \"table\": \"instant\", \"data\": %s}\n", rawtimeval_sec, datastring);
-					if (firstinterval) {
-						voltage_avg.reset(rawtimeval_sec);
-						current_avg.reset(rawtimeval_sec);
-						power_avg.reset(rawtimeval_sec);
-						firstinterval = false;
-					} else {
+					printf("{\"ts\": %.3f, \"table\": \"instant\", \"data\": %s}\n", rawtimeval_sec, datastring);
+					if (!firstinterval) {
 						sprintf(datastring_interval, "{\"V\": %.3f, \"I\": %.3f, \"P\": %.1f}", 
 							voltage_avg.avg(), current_avg.avg(), power_avg.avg());
-						voltage_avg.reset();
-						printf("{\"ts\": %f, \"table\": \"interval\", \"data\": %s}\n", rawtimeval_sec, datastring_interval);
+						printf("{\"ts\": %.3f, \"table\": \"interval\", \"interval_duration\": %.3f, \"data\": %s}\n", \
+							rawtimeval_sec, rawtimeval_sec - rawtimeval_intervalstart_sec, datastring_interval);
 					}
 					fflush(NULL);
+					voltage_avg.reset(rawtimeval_sec);
+					current_avg.reset(rawtimeval_sec);
+					power_avg.reset(rawtimeval_sec);
+					rawtimeval_intervalstart_sec = rawtimeval_sec;
+					firstinterval = false;
 				}
 				fflush(NULL);
 			} else {
-				printf("{\"ts\": %f, \"data\": %s}\n", rawtimeval_sec, datastring);
+				printf("{\"ts\": %.3f, \"data\": %s}\n", rawtimeval_sec, datastring);
 				fflush(NULL);
 			}
 		}
@@ -249,3 +259,4 @@ int main(int argc, char *argv[]) {
 
 	return 0;
 }
+
