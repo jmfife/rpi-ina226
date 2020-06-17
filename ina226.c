@@ -183,7 +183,7 @@ int main(int argc, char *argv[]) {
 	if (seconds_per_sample < 1.0) {
 		seconds_per_sample = 1.0;
 	}
-	printf("seconds_per_sample = %f\n", seconds_per_sample);
+	// printf("seconds_per_sample = %f\n", seconds_per_sample);
 	current_subinterval = 0; 	// starting subinterval just needs to be != the true current interval
 	if(!(arguments.emulate_mode)) {
 		fd = wiringPiI2CSetup(INA226_ADDRESS);
@@ -207,9 +207,8 @@ int main(int argc, char *argv[]) {
 
 			gettimeofday(&rawtimeval, NULL);
 			rawtimeval_sec = (double) rawtimeval.tv_sec + (double) rawtimeval.tv_usec / 1e6;
+			// doing this a little sketchy - should really used fixed-width types here
 			subinterval = (unsigned long int) (rawtimeval_sec / seconds_per_sample);
-			// printf("subinterval: %d, %d\n", subinterval, maxlong);
-			// return 0;
 			if (subinterval != current_subinterval) {
 				current_subinterval = subinterval;
 				seconds_to_next_sample = seconds_per_sample - fmod(rawtimeval_sec, seconds_per_sample);
