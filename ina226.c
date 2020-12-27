@@ -26,7 +26,7 @@ static char args_doc[] = "";
 static struct argp_option options[] = {
 	{ "emulate",    'e',   0,       0,  "Emulation mode",  			  			0},
 	{ "sph",        's',   "SPH",   0,  "Samples per hour",         			0},
-	{ "interval",   'i',   0,       0,  "Interval mode (default)",	   			0},
+	{ "interval",   'i',   0,       0,  "Interval mode",	   					0},
 	{ "iph",        'p',   "IPH",   0,  "Intervals per hour (interval mode)",   0},
 	{ "spi",        'k',   "SPI",   0,  "Samples per interval (interval mode)", 0},
 	{ "shuntr",     'r',   "SR",    0,  "Shunt resistance (Ohms)",              0},
@@ -150,9 +150,9 @@ int main(int argc, char *argv[]) {
 
 	arguments.emulate_mode = false;
 	arguments.samples_per_hour = 1800;
-	arguments.interval_mode = true;
-	arguments.intervals_per_hour = (int) 4;
-	arguments.samples_per_interval = (int) 450;
+	arguments.interval_mode = false;
+	arguments.intervals_per_hour = (int) 60;
+	arguments.samples_per_interval = (int) 12;
 	arguments.shunt_resistance_ohms = 0.00155f;
 	arguments.max_current_a = 200.0f;
 
@@ -224,20 +224,22 @@ int main(int argc, char *argv[]) {
 			}
 			gettimeofday(&rawtimeval, NULL);
 			rawtimeval_sec = (double) rawtimeval.tv_sec + (double) rawtimeval.tv_usec / 1e6;
-			sprintf(datastring, "{\"V\": %.3f, \"I\": %.3f, \"P\": %.1f}", voltage, current, power);
+			sprintf(datastring, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f", voltage, current, power);
 			if (arguments.interval_mode) {
-				printf("{\"ts\": %.3f, \"table\": \"now\", \"data\": %s}\n", rawtimeval_sec, datastring);
+				//printf("{\"ts\": %.3f, %s}\n", rawtimeval_sec, datastring);
 				// Handle Interval
 				voltage_avg.accum(rawtimeval_sec, voltage);
 				current_avg.accum(rawtimeval_sec, current);
 				power_avg.accum(rawtimeval_sec, power);
 				if ((current_subinterval + 1) % arguments.samples_per_interval == 0) {
-					printf("{\"ts\": %.3f, \"table\": \"instant\", \"data\": %s}\n", rawtimeval_sec, datastring);
+					//printf("{\"ts\": %.3f, %s}\n", rawtimeval_sec, datastring);
 					if (!firstinterval) {
-						sprintf(datastring_interval, "{\"V\": %.3f, \"I\": %.3f, \"P\": %.1f}", 
+						sprintf(datastring_interval, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f", 
 							voltage_avg.avg(), current_avg.avg(), power_avg.avg());
-						printf("{\"ts\": %.3f, \"table\": \"interval\", \"interval_duration\": %.3f, \"data\": %s}\n", \
-							rawtimeval_sec, rawtimeval_sec - rawtimeval_intervalstart_sec, datastring_interval);
+						//printf("{\"ts\": %.3f, \"interval_duration\": %.3f, \"data\": %s}\n", \
+						//	rawtimeval_sec, rawtimeval_sec - rawtimeval_intervalstart_sec, datastring_interval);
+						printf("{\"ts\": %.3f, %s}\n", \
+							rawtimeval_sec, datastring_interval);
 					}
 					fflush(NULL);
 					voltage_avg.reset(rawtimeval_sec);
@@ -248,7 +250,8 @@ int main(int argc, char *argv[]) {
 				}
 				fflush(NULL);
 			} else {
-				printf("{\"ts\": %.3f, \"data\": %s}\n", rawtimeval_sec, datastring);
+
+				printf("{\"ts\": %.3f, %s}\n", rawtimeval_sec, datastring);
 				fflush(NULL);
 			}
 		}
