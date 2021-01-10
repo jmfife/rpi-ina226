@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
 	arguments.interval_mode = false;
 	arguments.intervals_per_hour = (int) 60;
 	arguments.samples_per_interval = (int) 12;
-	arguments.shunt_resistance_ohms = 0.00155f;
+	arguments.shunt_resistance_ohms = 0.0015f;
 	arguments.max_current_a = 200.0f;
 
 	argp_parse(&argp, argc, argv, 0, 0, &arguments);
