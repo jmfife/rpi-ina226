@@ -1,5 +1,7 @@
 ina226
+ina226-emulate
 .idea
 *.swp
 *.o
 .DS_Store
+.vscode
