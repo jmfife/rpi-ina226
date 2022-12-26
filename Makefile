@@ -14,8 +14,8 @@ ina226: ina226.o AccumAvg.o
 ina226-emulate: ina226-emulate.o AccumAvg.o 
 	gcc -o ina226-emulate ina226-emulate.o AccumAvg.o -lm -largp -L /usr/local/opt/argp-standalone/lib 
 
-AccumAvg.o: AccumAvg.cpp AccumAvg.h
-	g++ -c -o AccumAvg.o AccumAvg.cpp
+AccumAvg.o: AccumAvg.c AccumAvg.h
+	gcc -c -o AccumAvg.o AccumAvg.c
 
 test_accumavg.o: test_accumavg.cpp AccumAvg.h
 	g++ -c -o test_accumavg.o test_accumavg.cpp

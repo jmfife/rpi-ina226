@@ -72,8 +72,10 @@ int main(int argc, char* argv[]) {
 
 	argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
-	float voltage, current, power, shunt;
-	AccumAvg voltage_avg, current_avg, power_avg;
+    float voltage, current, power, shunt;
+    AccumAvg* voltage_avg = AccumAvg_create();
+    AccumAvg* current_avg = AccumAvg_create();
+    AccumAvg* power_avg = AccumAvg_create();
 	int firstinterval = true;
 
 	struct timeval rawtimeval;
@@ -122,23 +124,23 @@ int main(int argc, char* argv[]) {
             if (arguments.interval_mode) {
                 //printf("{\"ts\": %.3f, %s}\n", rawtimeval_sec, datastring);
                 // Handle Interval
-                voltage_avg.accum(rawtimeval_sec, voltage);
-                current_avg.accum(rawtimeval_sec, current);
-                power_avg.accum(rawtimeval_sec, power);
+                AccumAvg_accum(voltage_avg, rawtimeval_sec, voltage);
+                AccumAvg_accum(current_avg, rawtimeval_sec, current);
+                AccumAvg_accum(power_avg, rawtimeval_sec, power);
                 if ((current_subinterval + 1) % arguments.samples_per_interval == 0) {
                     //printf("{\"ts\": %.3f, %s}\n", rawtimeval_sec, datastring);
                     if (!firstinterval) {
                         sprintf(datastring_interval, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f",
-                            voltage_avg.avg(), current_avg.avg(), power_avg.avg());
+                            AccumAvg_avg(voltage_avg), AccumAvg_avg(current_avg), AccumAvg_avg(power_avg));
                         //printf("{\"ts\": %.3f, \"interval_duration\": %.3f, \"data\": %s}\n", \
 						//	rawtimeval_sec, rawtimeval_sec - rawtimeval_intervalstart_sec, datastring_interval);
                         printf("{\"ts\": %.3f, %s}\n", \
                             rawtimeval_sec, datastring_interval);
                     }
                     fflush(NULL);
-                    voltage_avg.reset(rawtimeval_sec);
-                    current_avg.reset(rawtimeval_sec);
-                    power_avg.reset(rawtimeval_sec);
+                    AccumAvg_reset2(voltage_avg, rawtimeval_sec);
+                    AccumAvg_reset2(current_avg, rawtimeval_sec);
+                    AccumAvg_reset2(power_avg, rawtimeval_sec);
                     rawtimeval_intervalstart_sec = rawtimeval_sec;
                     firstinterval = false;
                 }

@@ -65,6 +65,24 @@ $ ./ina226 --sph=720
 {"ts": 1587848645.003553, "Voltage_V": 13.285, "Current_mA": 30.564}
 ```
 
+## How to Compile and run the emulator (does not require any special hardware)
+
+On MacOS, argp-standalone is needed:
+
+```
+$ brew install argp-standalone
+```
+
+Then, build and run:
+
+```
+$ make ina226-emulate
+$ 
+```
+$ sudo apt-get install wiringpi i2c-tools libi2c-dev
+$ make
+```
+
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
