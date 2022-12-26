@@ -159,7 +159,9 @@ int main(int argc, char *argv[]) {
 	argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
 	float voltage, current, power, shunt;
-	AccumAvg voltage_avg, current_avg, power_avg;
+    AccumAvg* voltage_avg = AccumAvg_create();
+    AccumAvg* current_avg = AccumAvg_create();
+    AccumAvg* power_avg = AccumAvg_create();
 	int firstinterval = true;
 
 	struct timeval rawtimeval;
@@ -201,29 +203,30 @@ int main(int argc, char *argv[]) {
 	// BUS / SHUNT / Averages / Mode
 	ina226_configure(INA226_TIME_8MS, INA226_TIME_8MS, INA226_AVERAGES_16, INA226_MODE_SHUNT_BUS_CONTINUOUS);
 
-	for(;;) {
+	for (;;) {
 		//ina226_configure(INA226_TIME_8MS, INA226_TIME_8MS, INA226_AVERAGES_16, INA226_MODE_SHUNT_BUS_TRIGGERED);
 		//ina226_wait();
 
-			gettimeofday(&rawtimeval, NULL);
-			rawtimeval_sec = (double) rawtimeval.tv_sec + (double) rawtimeval.tv_usec / 1e6;
-			// doing this a little sketchy - should really used fixed-width types here
-			subinterval = (unsigned long int) (rawtimeval_sec / seconds_per_sample);
-			if (subinterval != current_subinterval) {
-				current_subinterval = subinterval;
-				seconds_to_next_sample = seconds_per_sample - fmod(rawtimeval_sec, seconds_per_sample);
-				usleep(seconds_to_next_sample*1e6);
+		gettimeofday(&rawtimeval, NULL);
+		rawtimeval_sec = (double)rawtimeval.tv_sec + (double)rawtimeval.tv_usec / 1e6;
+		// doing this a little sketchy - should really used fixed-width types here
+		subinterval = (unsigned long int) (rawtimeval_sec / seconds_per_sample);
+		if (subinterval != current_subinterval) {
+			current_subinterval = subinterval;
+			seconds_to_next_sample = seconds_per_sample - fmod(rawtimeval_sec, seconds_per_sample);
+			usleep(seconds_to_next_sample * 1e6);
 			if (!(arguments.emulate_mode)) {
 				ina226_read(&voltage, &current, NULL, NULL);
-				power = current*voltage;		// use this because the INA226 does not represent power as a signed value
-			} else {
+				power = current * voltage;		// use this because the INA226 does not represent power as a signed value
+			}
+			else {
 				voltage = 12.0;
 				current = 1.0;
 				power = 12.0;
 				shunt = 9.055;
 			}
 			gettimeofday(&rawtimeval, NULL);
-			rawtimeval_sec = (double) rawtimeval.tv_sec + (double) rawtimeval.tv_usec / 1e6;
+			rawtimeval_sec = (double)rawtimeval.tv_sec + (double)rawtimeval.tv_usec / 1e6;
 			sprintf(datastring, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f", voltage, current, power);
 			if (arguments.interval_mode) {
 				//printf("{\"ts\": %.3f, %s}\n", rawtimeval_sec, datastring);
@@ -234,22 +237,23 @@ int main(int argc, char *argv[]) {
 				if ((current_subinterval + 1) % arguments.samples_per_interval == 0) {
 					//printf("{\"ts\": %.3f, %s}\n", rawtimeval_sec, datastring);
 					if (!firstinterval) {
-						sprintf(datastring_interval, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f", 
-							voltage_avg.avg(), current_avg.avg(), power_avg.avg());
+						sprintf(datastring_interval, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f",
+							AccumAvg_avg(voltage_avg), AccumAvg_avg(current_avg), AccumAvg_avg(power_avg));
 						//printf("{\"ts\": %.3f, \"interval_duration\": %.3f, \"data\": %s}\n", \
 						//	rawtimeval_sec, rawtimeval_sec - rawtimeval_intervalstart_sec, datastring_interval);
 						printf("{\"ts\": %.3f, %s}\n", \
 							rawtimeval_sec, datastring_interval);
 					}
 					fflush(NULL);
-					voltage_avg.reset(rawtimeval_sec);
-					current_avg.reset(rawtimeval_sec);
-					power_avg.reset(rawtimeval_sec);
+					AccumAvg_reset2(voltage_avg, rawtimeval_sec);
+					AccumAvg_reset2(current_avg, rawtimeval_sec);
+					AccumAvg_reset2(power_avg, rawtimeval_sec);
 					rawtimeval_intervalstart_sec = rawtimeval_sec;
 					firstinterval = false;
 				}
 				fflush(NULL);
-			} else {
+			}
+			else {
 
 				printf("{\"ts\": %.3f, %s}\n", rawtimeval_sec, datastring);
 				fflush(NULL);
