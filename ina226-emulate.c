@@ -90,7 +90,10 @@ int main(int argc, char* argv[]) {
 	char datastring_interval[1000];
 	long int maxlong = LONG_MAX;
 
-	/* set up timer */
+    time_t t;
+    srand((unsigned)time(&t));
+
+    /* set up timer */
 	if (arguments.interval_mode) {
 		seconds_per_sample = 3600.0 / arguments.intervals_per_hour / arguments.samples_per_interval;
 	} else {
@@ -114,9 +117,9 @@ int main(int argc, char* argv[]) {
             current_subinterval = subinterval;
             seconds_to_next_sample = seconds_per_sample - fmod(rawtimeval_sec, seconds_per_sample);
             usleep(seconds_to_next_sample * 1e6);
-            voltage = 12.0;
-            current = 1.0;
-            power = 12.0;
+            voltage = 12.0 + (float) rand() / RAND_MAX - 0.5;
+            current = 3.0 + ((float) rand() / RAND_MAX - 0.5)*0.1;
+            power = voltage*current;
             shunt = 9.055;
             gettimeofday(&rawtimeval, NULL);
             rawtimeval_sec = (double)rawtimeval.tv_sec + (double)rawtimeval.tv_usec / 1e6;

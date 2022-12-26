@@ -77,10 +77,15 @@ Then, build and run:
 
 ```
 $ make ina226-emulate
-$ 
-```
-$ sudo apt-get install wiringpi i2c-tools libi2c-dev
-$ make
+gcc -c -o ina226-emulate.o ina226-emulate.c 
+gcc -c -o AccumAvg.o AccumAvg.c
+gcc -o ina226-emulate ina226-emulate.o AccumAvg.o -lm -largp -L /usr/local/opt/argp-standalone/lib 
+$ ./ina226-emulate
+{"ts": 1672077220.003, "V": 11.794, "I": 3.049, "P": 36.0}
+{"ts": 1672077222.003, "V": 12.297, "I": 2.958, "P": 36.4}
+{"ts": 1672077224.003, "V": 12.206, "I": 2.985, "P": 36.4}
+{"ts": 1672077226.005, "V": 11.549, "I": 3.036, "P": 35.1}
+...
 ```
 
 ## License

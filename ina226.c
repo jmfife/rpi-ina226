@@ -176,6 +176,9 @@ int main(int argc, char *argv[]) {
 	char datastring_interval[1000];
 	long int maxlong = LONG_MAX;
 
+	time_t t;
+	srand((unsigned)time(&t));
+		
 	/* set up timer */
 	if (arguments.interval_mode) {
 		seconds_per_sample = 3600.0 / arguments.intervals_per_hour / arguments.samples_per_interval;
@@ -220,9 +223,9 @@ int main(int argc, char *argv[]) {
 				power = current * voltage;		// use this because the INA226 does not represent power as a signed value
 			}
 			else {
-				voltage = 12.0;
-				current = 1.0;
-				power = 12.0;
+				voltage = 12.0 + (float) rand() / RAND_MAX - 0.5;
+				current = 3.0 + ((float) rand() / RAND_MAX - 0.5)*0.1;
+				power = voltage*current;
 				shunt = 9.055;
 			}
 			gettimeofday(&rawtimeval, NULL);
