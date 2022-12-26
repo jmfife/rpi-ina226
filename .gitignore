@@ -1,5 +1,6 @@
 ina226
 ina226-emulate
+test_accumavg
 .idea
 *.swp
 *.o
