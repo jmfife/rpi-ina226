@@ -88,6 +88,14 @@ $ ./ina226-emulate
 ...
 ```
 
+## How to Run Tests
+
+```
+$ make test
+./test_accumavg 
+OK!
+```
+
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.

@@ -1,6 +1,9 @@
+CC=gcc
+CFLAGS=-g3 -Wall
+
 .PHONY: clean
 
-all:	ina226 test_accumavg
+all:
 
 ina226.o: ina226.c ina226.h 
 	gcc -c -o ina226.o ina226.c 
@@ -17,11 +20,24 @@ ina226-emulate: ina226-emulate.o AccumAvg.o
 AccumAvg.o: AccumAvg.c AccumAvg.h
 	gcc -c -o AccumAvg.o AccumAvg.c
 
-test_accumavg.o: test_accumavg.c AccumAvg.h
-	gcc -c -o test_accumavg.o test_accumavg.c
+test_accumavg.o: test_accumavg.c AccumAvg.h tester.h
 
-test_accumavg: test_accumavg.o AccumAvg.o
-	gcc -o test_accumavg test_accumavg.o AccumAvg.o
+test_accumavg: test_accumavg.o AccumAvg.o tester.o
+	$(CC) $(CFLAGS) -o $@ $^
 
-xclean:
-	rm -rf ina226
+clean:
+	rm -f ina226
+	rm -f ina226-emulate
+	rm -f test_accumavg
+	rm -f *.o
+
+test: test_accumavg
+	./test_accumavg 
+	@echo OK!
+
+tester.o: tester.c tester.h
+
+
+
+
+
