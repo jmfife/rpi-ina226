@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
 
 	argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
-    float voltage, current, power, shunt;
+    float voltage, current, power;
     AccumAvg* voltage_avg = AccumAvg_create();
     AccumAvg* current_avg = AccumAvg_create();
     AccumAvg* power_avg = AccumAvg_create();
@@ -80,17 +80,13 @@ int main(int argc, char* argv[]) {
 
 	struct timeval rawtimeval;
 	double rawtimeval_sec;
-	double rawtimeval_intervalstart_sec;
 	double seconds_per_sample;
 	double seconds_to_next_sample;
 	long int subinterval, current_subinterval;
-	long subinterval3;
-	int subintervali;
 	char datastring[1000];
 	char datastring_interval[1000];
-	long int maxlong = LONG_MAX;
-
-    time_t t;
+	
+	time_t t;
     srand((unsigned)time(&t));
 
     /* set up timer */
@@ -120,7 +116,6 @@ int main(int argc, char* argv[]) {
             voltage = 12.0 + (float) rand() / RAND_MAX - 0.5;
             current = 3.0 + ((float) rand() / RAND_MAX - 0.5)*0.1;
             power = voltage*current;
-            shunt = 9.055;
             gettimeofday(&rawtimeval, NULL);
             rawtimeval_sec = (double)rawtimeval.tv_sec + (double)rawtimeval.tv_usec / 1e6;
             sprintf(datastring, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f", voltage, current, power);
@@ -137,21 +132,19 @@ int main(int argc, char* argv[]) {
                             AccumAvg_avg(voltage_avg), AccumAvg_avg(current_avg), AccumAvg_avg(power_avg));
                         //printf("{\"ts\": %.3f, \"interval_duration\": %.3f, \"data\": %s}\n", \
 						//	rawtimeval_sec, rawtimeval_sec - rawtimeval_intervalstart_sec, datastring_interval);
-                        printf("{\"ts\": %.3f, %s}\n", \
-                            rawtimeval_sec, datastring_interval);
+                        printf("{\"ts\": %lu, %s}\n", \
+                            (unsigned long) (rawtimeval_sec*1e9), datastring_interval);
                     }
                     fflush(NULL);
                     AccumAvg_reset2(voltage_avg, rawtimeval_sec);
                     AccumAvg_reset2(current_avg, rawtimeval_sec);
                     AccumAvg_reset2(power_avg, rawtimeval_sec);
-                    rawtimeval_intervalstart_sec = rawtimeval_sec;
                     firstinterval = false;
                 }
                 fflush(NULL);
             }
             else {
-
-                printf("{\"ts\": %.3f, %s}\n", rawtimeval_sec, datastring);
+                printf("{\"ts\": %lu, %s}\n", (unsigned long) (rawtimeval_sec*1e9), datastring);
                 fflush(NULL);
             }
         }
