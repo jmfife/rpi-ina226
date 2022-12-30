@@ -11,7 +11,7 @@
 #include "ina226.h"
 #include <sys/time.h>
 #include "AccumAvg.h"
-#include <limits.h>
+#include <limit.h>
 
 #define INA226_ADDRESS 0x40
 
@@ -232,19 +232,19 @@ int main(int argc, char *argv[]) {
 			rawtimeval_sec = (double)rawtimeval.tv_sec + (double)rawtimeval.tv_usec / 1e6;
 			sprintf(datastring, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f", voltage, current, power);
 			if (arguments.interval_mode) {
-				//printf("{\"ts\": %.3f, %s}\n", rawtimeval_sec, datastring);
+				//printf("{\"time\": %.3f, %s}\n", rawtimeval_sec, datastring);
 				// Handle Interval
 				voltage_avg.accum(rawtimeval_sec, voltage);
 				current_avg.accum(rawtimeval_sec, current);
 				power_avg.accum(rawtimeval_sec, power);
 				if ((current_subinterval + 1) % arguments.samples_per_interval == 0) {
-					//printf("{\"ts\": %.3f, %s}\n", rawtimeval_sec, datastring);
+					//printf("{\"time\": %.3f, %s}\n", rawtimeval_sec, datastring);
 					if (!firstinterval) {
 						sprintf(datastring_interval, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f",
 							AccumAvg_avg(voltage_avg), AccumAvg_avg(current_avg), AccumAvg_avg(power_avg));
-						//printf("{\"ts\": %.3f, \"interval_duration\": %.3f, \"data\": %s}\n", \
+						//printf("{\"time\": %.3f, \"interval_duration\": %.3f, \"data\": %s}\n", \
 						//	rawtimeval_sec, rawtimeval_sec - rawtimeval_intervalstart_sec, datastring_interval);
-						printf("{\"ts\": %.3f, %s}\n", \
+						printf("{\"time\": %.3f, %s}\n", \
 							rawtimeval_sec, datastring_interval);
 					}
 					fflush(NULL);
@@ -258,7 +258,7 @@ int main(int argc, char *argv[]) {
 			}
 			else {
 
-				printf("{\"ts\": %.3f, %s}\n", rawtimeval_sec, datastring);
+				printf("{\"time\": %.3f, %s}\n", rawtimeval_sec, datastring);
 				fflush(NULL);
 			}
 		}

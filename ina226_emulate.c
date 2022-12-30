@@ -120,19 +120,19 @@ int main(int argc, char* argv[]) {
             rawtimeval_sec = (double)rawtimeval.tv_sec + (double)rawtimeval.tv_usec / 1e6;
             sprintf(datastring, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f", voltage, current, power);
             if (arguments.interval_mode) {
-                //printf("{\"ts\": %.3f, %s}\n", rawtimeval_sec, datastring);
+                //printf("{\"time\": %.3f, %s}\n", rawtimeval_sec, datastring);
                 // Handle Interval
                 AccumAvg_accum(voltage_avg, rawtimeval_sec, voltage);
                 AccumAvg_accum(current_avg, rawtimeval_sec, current);
                 AccumAvg_accum(power_avg, rawtimeval_sec, power);
                 if ((current_subinterval + 1) % arguments.samples_per_interval == 0) {
-                    //printf("{\"ts\": %.3f, %s}\n", rawtimeval_sec, datastring);
+                    //printf("{\"time\": %.3f, %s}\n", rawtimeval_sec, datastring);
                     if (!firstinterval) {
                         sprintf(datastring_interval, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f",
                             AccumAvg_avg(voltage_avg), AccumAvg_avg(current_avg), AccumAvg_avg(power_avg));
-                        //printf("{\"ts\": %.3f, \"interval_duration\": %.3f, \"data\": %s}\n", \
+                        //printf("{\"time\": %.3f, \"interval_duration\": %.3f, \"data\": %s}\n", \
 						//	rawtimeval_sec, rawtimeval_sec - rawtimeval_intervalstart_sec, datastring_interval);
-                        printf("{\"ts\": %lu, %s}\n", \
+                        printf("{\"time\": %lu, \"fields\": {%s}}\n", \
                             (unsigned long) (rawtimeval_sec*1e9), datastring_interval);
                     }
                     fflush(NULL);
@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
                 fflush(NULL);
             }
             else {
-                printf("{\"ts\": %lu, %s}\n", (unsigned long) (rawtimeval_sec*1e9), datastring);
+                printf("{\"time\": %lu, \"fields\": {%s}}\n", (unsigned long) (rawtimeval_sec*1e9), datastring);
                 fflush(NULL);
             }
         }
