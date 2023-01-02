@@ -234,9 +234,9 @@ int main(int argc, char *argv[]) {
 			if (arguments.interval_mode) {
 				//printf("{\"time\": %.3f, %s}\n", rawtimeval_sec, datastring);
 				// Handle Interval
-				voltage_avg.accum(rawtimeval_sec, voltage);
-				current_avg.accum(rawtimeval_sec, current);
-				power_avg.accum(rawtimeval_sec, power);
+                AccumAvg_accum(voltage_avg, rawtimeval_sec, voltage);
+                AccumAvg_accum(current_avg, rawtimeval_sec, current);
+                AccumAvg_accum(power_avg, rawtimeval_sec, power);
 				if ((current_subinterval + 1) % arguments.samples_per_interval == 0) {
 					//printf("{\"time\": %.3f, %s}\n", rawtimeval_sec, datastring);
 					if (!firstinterval) {
@@ -244,8 +244,8 @@ int main(int argc, char *argv[]) {
 							AccumAvg_avg(voltage_avg), AccumAvg_avg(current_avg), AccumAvg_avg(power_avg));
 						//printf("{\"time\": %.3f, \"interval_duration\": %.3f, \"data\": %s}\n", \
 						//	rawtimeval_sec, rawtimeval_sec - rawtimeval_intervalstart_sec, datastring_interval);
-						printf("{\"time\": %.3f, %s}\n", \
-							rawtimeval_sec, datastring_interval);
+                        printf("{\"time\": %lu, \"fields\": {%s}}\n", \
+                            (unsigned long) (rawtimeval_sec*1e9), datastring_interval);
 					}
 					fflush(NULL);
 					AccumAvg_reset2(voltage_avg, rawtimeval_sec);
@@ -257,8 +257,6 @@ int main(int argc, char *argv[]) {
 				fflush(NULL);
 			}
 			else {
-
-				printf("{\"time\": %.3f, %s}\n", rawtimeval_sec, datastring);
 				fflush(NULL);
 			}
 		}
