@@ -11,7 +11,7 @@
 #include "ina226.h"
 #include <sys/time.h>
 #include "AccumAvg.h"
-#include <limit.h>
+#include <limits.h>
 
 #define INA226_ADDRESS 0x40
 
