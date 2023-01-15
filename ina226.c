@@ -1,269 +1,78 @@
+/*
+ * INA226 - TI Current/Voltage/Power Monitor Code
+ * Copyright (C) 2021 Craig Peacock
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301, USA.
+ */
+
 #include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
+#include <string.h>
 #include <stdint.h>
-#include <time.h>
-#include <math.h>
 #include <unistd.h>
-#include <wiringPiI2C.h>
-#include <argp.h>
-#include <stdbool.h>
+#include "i2c.h"
 #include "ina226.h"
-#include <sys/time.h>
-#include "AccumAvg.h"
-#include <limits.h>
 
-#define INA226_ADDRESS 0x40
+void ina226_init(uint32_t i2c_master_port)
+{
+	i2c_write_short(i2c_master_port, INA226_SLAVE_ADDRESS, INA226_CFG_REG, 0x8000);	// Reset
+	i2c_write_short(i2c_master_port, INA226_SLAVE_ADDRESS, INA226_CFG_REG, 0x4527);	// Average over 16 Samples
+	i2c_write_short(i2c_master_port, INA226_SLAVE_ADDRESS, INA226_CAL_REG, 1024);	// 1A, 0.100Ohm Resistor
 
-int fd;
-uint64_t config;
-float current_lsb;
-
-const char *argp_program_version = "ina226 1.0";
-const char *argp_program_bug_address = "https://github.com/jmfife/rpi-ina226";
-static char doc[] = "Use a Raspberry Pi with an INA226 chip to measure DC voltage and current";
-static char args_doc[] = "";
-static struct argp_option options[] = {
-	{ "emulate",    'e',   0,       0,  "Emulation mode",  			  			0},
-	{ "sph",        's',   "SPH",   0,  "Samples per hour",         			0},
-	{ "interval",   'i',   0,       0,  "Interval mode",	   					0},
-	{ "iph",        'p',   "IPH",   0,  "Intervals per hour (interval mode)",   0},
-	{ "spi",        'k',   "SPI",   0,  "Samples per interval (interval mode)", 0},
-	{ "shuntr",     'r',   "SR",    0,  "Shunt resistance (Ohms)",              0},
-	{ "maxi",       'm',   "MXI",   0,  "Maximum current (A)",                  0},
-	{ 0 }
-};
-
-struct arguments {
-	bool emulate_mode;
-	int samples_per_hour;
-	bool interval_mode;
-	int intervals_per_hour;
-	int samples_per_interval;
-	float shunt_resistance_ohms;
-	float max_current_a;
-};
-
-static error_t parse_opt(int key, char *arg, struct argp_state *state) {
-	(void) arg; /* suppress warning about unused parameter */
-	struct arguments *arguments = (struct arguments *) state->input;
-	switch (key) {
-		case 'e': arguments->emulate_mode = true; break;
-		case 's': arguments->samples_per_hour = atoi(arg); break;
-		case 'i': arguments->interval_mode = true; break;
-		case 'p': arguments->intervals_per_hour = atoi(arg); break;
-		case 'k': arguments->samples_per_interval = atoi(arg); break;
-		case 'r': arguments->shunt_resistance_ohms = atof(arg); break;
-		case 'm': arguments->max_current_a = atof(arg); break;
-		case ARGP_KEY_ARG:
-			return 0;
-		default:
-			return ARGP_ERR_UNKNOWN;
-	}
-	return 0;
+	// printf("Manufacturer ID:        0x%04X\r\n",i2c_read_short(i2c_master_port, INA226_SLAVE_ADDRESS, INA226_MANUFACTURER_ID));
+	// printf("Die ID Register:        0x%04X\r\n",i2c_read_short(i2c_master_port, INA226_SLAVE_ADDRESS, INA226_DIE_ID));
+	// printf("Configuration Register: 0x%04X\r\n",i2c_read_short(i2c_master_port, INA226_SLAVE_ADDRESS, INA226_CFG_REG));
+	// printf("\r\n");
+	sleep(1);
 }
 
-static struct argp argp = { options, parse_opt, args_doc, doc, 0, 0, 0 };
+float ina226_voltage(uint32_t i2c_master_port)
+{
+	uint16_t iBusVoltage;
+	float fBusVoltage;
 
-uint16_t read16(int fd, uint8_t ad){
-	uint16_t result = wiringPiI2CReadReg16(fd,ad);
-	// Chip uses different endian
-	return  (result<<8) | (result>>8);
+	iBusVoltage = i2c_read_short(i2c_master_port, INA226_SLAVE_ADDRESS, INA226_BUS_VOLT_REG);
+	//printf("iBusVoltage = %04x\r\n", iBusVoltage);
+	fBusVoltage = (iBusVoltage) * 0.00125;
+	//printf("Bus Voltage = %.2fV, ", fBusVoltage);
+
+	return (fBusVoltage);
 }
 
-void write16(int fd, uint8_t ad, uint16_t value) {
-	// Chip uses different endian
-	wiringPiI2CWriteReg16(fd,ad,(value<<8)|(value>>8));
+float ina226_current(uint32_t i2c_master_port)
+{
+	int16_t iCurrent;
+	float fCurrent;
+
+	iCurrent = i2c_read_short(i2c_master_port, INA226_SLAVE_ADDRESS, INA226_CURRENT_REG);
+	// Internally Calculated as Current = ((ShuntVoltage * CalibrationRegister) / 2048)
+	fCurrent = iCurrent * 0.0005;
+	//printf("Current = %.3fA\r\n", fCurrent);
+
+	return (fCurrent);
 }
 
-// R of shunt resistor in ohm. Max current in Amp
-void ina226_calibrate(float r_shunt, float max_current) {
-	current_lsb = max_current / (1 << 15);
-	float calib = 0.00512 / (current_lsb * r_shunt);
-	uint16_t calib_reg = (uint16_t) floorf(calib);
-	current_lsb = 0.00512 / (r_shunt * calib_reg);
+float ina226_power(uint32_t i2c_master_port)
+{
+	int16_t iPower;
+	float fPower;
 
-	//printf("LSB %f\n",current_lsb);
-	//printf("Calib %f\n",calib);
-	//printf("Calib R%#06x / %d\n",calib_reg,calib_reg);
+	iPower = i2c_read_short(i2c_master_port, INA226_SLAVE_ADDRESS, INA226_POWER_REG);
+	// The Power Register LSB is internally programmed to equal 25 times the programmed value of the Current_LSB
+	fPower = iPower * 0.0125;
 
-	write16(fd,INA226_REG_CALIBRATION, calib_reg);
+	//printf("Power = %.2fW\r\n", fPower);
+	return (fPower);
 }
-
-void ina226_configure(uint8_t bus, uint8_t shunt, uint8_t average, uint8_t mode) {
-	config = (average<<9) | (bus<<6) | (shunt<<3) | mode;
-	write16(fd,INA226_REG_CONFIGURATION, config);
-}
-
-uint16_t ina226_conversion_ready() {
-	return read16(fd,INA226_REG_MASK_ENABLE) & INA226_MASK_ENABLE_CVRF;
-}
-
-void ina226_wait() {
-	uint8_t average = (config>>9) & 7;
-	uint8_t bus = (config>>6) & 7;
-	uint8_t shunt = (config>>3) & 7;
-
-	uint32_t total_wait = (wait[bus] + wait[shunt] + (average ? avgwaits[bus>shunt ? bus : shunt] : 0)) * averages[average];
-
-	usleep(total_wait+1000);
-
-	int count=0;
-	while(!ina226_conversion_ready()){
-		count++;
-	}
-	//printf("%d\n",count);
-}
-
-void ina226_read(float *voltage, float *current, float *power, float* shunt_voltage) {
-	if (voltage) {
-		uint16_t voltage_reg = read16(fd, INA226_REG_BUS_VOLTAGE);
-		*voltage = (float) voltage_reg * 1.25e-3;
-	}
-
-	if (current) {
-		int16_t current_reg = (int16_t) read16(fd, INA226_REG_CURRENT);
-		*current = (float) current_reg * current_lsb;
-	}
-
-	if (power) {
-		int16_t power_reg = (int16_t) read16(fd, INA226_REG_POWER);
-		*power = (float) power_reg * 25.0 * current_lsb;
-	}
-
-	if (shunt_voltage) {
-		int16_t shunt_voltage_reg = (int16_t) read16(fd, INA226_REG_SHUNT_VOLTAGE);
-		*shunt_voltage = (float) shunt_voltage_reg * 2.5e-3;
-	}
-}
-
-inline void ina226_reset() {
-	write16(fd, INA226_REG_CONFIGURATION, config = INA226_RESET);
-}
-
-inline void ina226_disable() {
-	write16(fd, INA226_REG_CONFIGURATION, config = INA226_MODE_OFF);
-}
-
-int main(int argc, char *argv[]) {
-	struct arguments arguments;
-
-	arguments.emulate_mode = false;
-	arguments.samples_per_hour = 1800;
-	arguments.interval_mode = false;
-	arguments.intervals_per_hour = (int) 60;
-	arguments.samples_per_interval = (int) 12;
-	arguments.shunt_resistance_ohms = 0.0015f;
-	arguments.max_current_a = 200.0f;
-
-	argp_parse(&argp, argc, argv, 0, 0, &arguments);
-
-	float voltage, current, power, shunt;
-    AccumAvg* voltage_avg = AccumAvg_create();
-    AccumAvg* current_avg = AccumAvg_create();
-    AccumAvg* power_avg = AccumAvg_create();
-	int firstinterval = true;
-
-	struct timeval rawtimeval;
-	double rawtimeval_sec;
-	double rawtimeval_intervalstart_sec;
-	double seconds_per_sample;
-	double seconds_to_next_sample;
-	long int subinterval, current_subinterval;
-	long subinterval3;
-	int subintervali;
-	char datastring[1000];
-	char datastring_interval[1000];
-	long int maxlong = LONG_MAX;
-
-	time_t t;
-	srand((unsigned)time(&t));
-		
-	/* set up timer */
-	if (arguments.interval_mode) {
-		seconds_per_sample = 3600.0 / arguments.intervals_per_hour / arguments.samples_per_interval;
-	} else {
-		seconds_per_sample = 3600.0 / arguments.samples_per_hour;
-	}
-	if (seconds_per_sample < 1.0) {
-		seconds_per_sample = 1.0;
-	}
-	// printf("seconds_per_sample = %f\n", seconds_per_sample);
-	current_subinterval = 0; 	// starting subinterval just needs to be != the true current interval
-	if(!(arguments.emulate_mode)) {
-		fd = wiringPiI2CSetup(INA226_ADDRESS);
-		if(fd < 0) {
-			printf("Device not found");
-			return -1;
-		}
-	}
-
-	//printf("Manufacturer 0x%X Chip 0x%X\n",read16(fd,INA226_REG_MANUFACTURER),read16(fd,INA226_REG_DIE_ID));
-
-	ina226_calibrate(arguments.shunt_resistance_ohms, arguments.max_current_a);
-	usleep(50000); // wait 50ms for it to take
-
-	// BUS / SHUNT / Averages / Mode
-	ina226_configure(INA226_TIME_8MS, INA226_TIME_8MS, INA226_AVERAGES_16, INA226_MODE_SHUNT_BUS_CONTINUOUS);
-
-	for (;;) {
-		//ina226_configure(INA226_TIME_8MS, INA226_TIME_8MS, INA226_AVERAGES_16, INA226_MODE_SHUNT_BUS_TRIGGERED);
-		//ina226_wait();
-
-		gettimeofday(&rawtimeval, NULL);
-		rawtimeval_sec = (double)rawtimeval.tv_sec + (double)rawtimeval.tv_usec / 1e6;
-		// doing this a little sketchy - should really used fixed-width types here
-		subinterval = (unsigned long int) (rawtimeval_sec / seconds_per_sample);
-		if (subinterval != current_subinterval) {
-			current_subinterval = subinterval;
-			seconds_to_next_sample = seconds_per_sample - fmod(rawtimeval_sec, seconds_per_sample);
-			usleep(seconds_to_next_sample * 1e6);
-			if (!(arguments.emulate_mode)) {
-				ina226_read(&voltage, &current, NULL, NULL);
-				power = current * voltage;		// use this because the INA226 does not represent power as a signed value
-			}
-			else {
-				voltage = 12.0 + (float) rand() / RAND_MAX - 0.5;
-				current = 3.0 + ((float) rand() / RAND_MAX - 0.5)*0.1;
-				power = voltage*current;
-				shunt = 9.055;
-			}
-			gettimeofday(&rawtimeval, NULL);
-			rawtimeval_sec = (double)rawtimeval.tv_sec + (double)rawtimeval.tv_usec / 1e6;
-			sprintf(datastring, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f", voltage, current, power);
-			if (arguments.interval_mode) {
-				//printf("{\"time\": %.3f, %s}\n", rawtimeval_sec, datastring);
-				// Handle Interval
-                AccumAvg_accum(voltage_avg, rawtimeval_sec, voltage);
-                AccumAvg_accum(current_avg, rawtimeval_sec, current);
-                AccumAvg_accum(power_avg, rawtimeval_sec, power);
-				if ((current_subinterval + 1) % arguments.samples_per_interval == 0) {
-					//printf("{\"time\": %.3f, %s}\n", rawtimeval_sec, datastring);
-					if (!firstinterval) {
-						sprintf(datastring_interval, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f",
-							AccumAvg_avg(voltage_avg), AccumAvg_avg(current_avg), AccumAvg_avg(power_avg));
-						//printf("{\"time\": %.3f, \"interval_duration\": %.3f, \"data\": %s}\n", \
-						//	rawtimeval_sec, rawtimeval_sec - rawtimeval_intervalstart_sec, datastring_interval);
-                        printf("{\"time\": %lu, \"fields\": {%s}}\n", \
-                            (unsigned long) (rawtimeval_sec*1e9), datastring_interval);
-					}
-					fflush(NULL);
-					AccumAvg_reset2(voltage_avg, rawtimeval_sec);
-					AccumAvg_reset2(current_avg, rawtimeval_sec);
-					AccumAvg_reset2(power_avg, rawtimeval_sec);
-					rawtimeval_intervalstart_sec = rawtimeval_sec;
-					firstinterval = false;
-				}
-				fflush(NULL);
-			}
-			else {
-				fflush(NULL);
-			}
-		}
-	}
-
-	ina226_disable();
-
-	return 0;
-}
-

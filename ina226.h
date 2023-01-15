@@ -1,85 +1,41 @@
+/*
+ * INA226 - TI Current/Voltage/Power Monitor Code
+ * Copyright (C) 2021 Craig Peacock
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301, USA.
+ */
 
-#ifndef INA226_H_
-#define INA226_H_
+#ifndef MAIN_INA226_H_
+#define MAIN_INA226_H_
 
-enum
-{
-INA226_REG_CONFIGURATION = 0x00,
-INA226_REG_SHUNT_VOLTAGE = 0x01,
-INA226_REG_BUS_VOLTAGE   = 0x02,
-INA226_REG_POWER         = 0x03,
-INA226_REG_CURRENT       = 0x04,
-INA226_REG_CALIBRATION   = 0x05,
-INA226_REG_MASK_ENABLE   = 0x06,
-INA226_REG_ALERT_LIMIT   = 0x07,
-INA226_REG_MANUFACTURER  = 0xFE,
-INA226_REG_DIE_ID        = 0xFF,
-};
+#define INA226_SLAVE_ADDRESS	0x40
+#define INA226_CFG_REG		0x00
+#define INA226_SHUNT_VOLT_REG	0x01
+#define INA226_BUS_VOLT_REG	0x02
+#define INA226_POWER_REG	0x03
+#define INA226_CURRENT_REG	0x04
+#define INA226_CAL_REG		0x05
+#define INA226_MASKEN_REG	0x06
+#define INA226_ALERT_LMT_REG	0x07
+#define INA226_MANUFACTURER_ID	0xFE
+#define INA226_DIE_ID		0xFF
 
-#define INA226_RESET 0x8000
-#define INA226_MASK_ENABLE_CVRF 0x0008
+void ina226_init(uint32_t i2c_master_port);
+float ina226_voltage(uint32_t i2c_master_port);
+float ina226_current(uint32_t i2c_master_port);
+float ina226_power(uint32_t i2c_master_port);
 
-enum
-{
-INA226_BIT_SHUNT= 0,
-INA226_BIT_BUS	= 1,
-INA226_BIT_MODE	= 2,
-};
-
-#define INA226_MODE_SHUNT 1
-#define INA226_MODE_BUS 2
-#define INA226_MODE_TRIGGERED 0
-#define INA226_MODE_CONTINUOUS 4
-
-enum
-{
-INA226_MODE_OFF = 0,
-INA226_MODE_SHUNT_TRIGGERED = 1,
-INA226_MODE_BUS_TRIGGERED = 2,
-INA226_MODE_SHUNT_BUS_TRIGGERED = 3,
-INA226_MODE_OFF2 = 4,
-INA226_MODE_SHUNT_CONTINUOUS = 5,
-INA226_MODE_BUS_CONTINUOUS = 6,
-INA226_MODE_SHUNT_BUS_CONTINUOUS = 7,
-};
-
-enum
-{
-INA226_TIME_01MS  = 0, /* 140us */
-INA226_TIME_02MS  = 1, /* 204us */
-INA226_TIME_03MS  = 2, /* 332us */
-INA226_TIME_05MS  = 3, /* 588us */
-INA226_TIME_1MS   = 4, /* 1.1ms */
-INA226_TIME_2MS   = 5, /* 2.115ms */
-INA226_TIME_4MS   = 6, /* 4.156ms */
-INA226_TIME_8MS   = 7, /* 8.244ms */
-};
-
-enum
-{
-INA226_AVERAGES_1	= 0,
-INA226_AVERAGES_4	= 1,
-INA226_AVERAGES_16	= 2,
-INA226_AVERAGES_64	= 3,
-INA226_AVERAGES_128	= 4,
-INA226_AVERAGES_256	= 5,
-INA226_AVERAGES_512	= 6,
-INA226_AVERAGES_1024= 7,
-};
-
-const uint16_t averages[] = {1,4,16,64,128,256,512,1024};
-
-// Conservative to be done for all averages
-//const uint16_t wait[] = {142,206,336,595,1113,2142,4207,8346};
-
-// Minimum wait for 1 average
-const uint16_t wait[] = {0,0,0,0,500,1500,3550,7690};
-
-// Time in us per iteration to calculate average for a given measure time
-const uint16_t avgwaits[]={300,450,700,1200,1250,1300,1300,1320};
-
-// 8ms
-// 8340 21c on 1024, 9 on 512, 3 on 256, 1 on 128
-// 7800 on 1,
-
-#endif /* INA226_H_ */
+#endif
