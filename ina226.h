@@ -18,8 +18,15 @@
  * 02110-1301, USA.
  */
 
+
+// float current_lsb, float r_ohms
+
+
 #ifndef MAIN_INA226_H_
 #define MAIN_INA226_H_
+
+struct INA226Struct;
+typedef struct INA226Struct INA226;
 
 #define INA226_SLAVE_ADDRESS	0x40
 #define INA226_CFG_REG		0x00
@@ -33,9 +40,10 @@
 #define INA226_MANUFACTURER_ID	0xFE
 #define INA226_DIE_ID		0xFF
 
-void ina226_init(uint32_t i2c_master_port);
-float ina226_voltage(uint32_t i2c_master_port);
-float ina226_current(uint32_t i2c_master_port);
-float ina226_power(uint32_t i2c_master_port);
+INA226* ina226_create(char* device_file, uint32_t slave_address,
+    float current_lsb, float shunt_resistance_ohms);
+float ina226_voltage(INA226* ina226);
+float ina226_current(INA226* ina226);
+float ina226_power(INA226* ina226);
 
 #endif

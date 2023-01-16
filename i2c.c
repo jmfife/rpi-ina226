@@ -1,21 +1,14 @@
 /*
- * Linux I2C example code
- * Copyright (C) 2021 Craig Peacock
+ * I2C - Simple I2C Interface
+ * Copyright (C) 2022 John Michael Fife
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
+ * Incomplete code forked from https://github.com/craigpeacock/Linux_I2C 
+ * Jan 15 2022.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * Made multi-instance following 
+ * "Test Driven Development for Embedded C" by
+ * James W. Grenning.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA.
  */
 
 #include <stdlib.h>
@@ -27,15 +20,16 @@
 #include <errno.h>
 #include <byteswap.h>
 #include <linux/i2c-dev.h>
-#include <i2c.h>
+#include <linux/i2c.h>
 #include <sys/ioctl.h>
+#include "i2c.h"
 
-struct I2CDeviceStruct {
+struct I2CStruct {
     uint32_t i2c_device_file_handle;
 };
 
-// Allocation + initialization 
-void i2c_device_init(I2CDevice* self, char* i2c_device_file_name) {
+// Initialization 
+void i2c_device_init(I2C* self, char* i2c_device_file_name) {
 	uint32_t handle;
 	   if ((handle = open(i2c_device_file_name, O_RDWR)) == -1) {
 		fprintf( stderr, "Failed to open I2C port %s. Error = %d.\r\n", 
@@ -46,8 +40,8 @@ void i2c_device_init(I2CDevice* self, char* i2c_device_file_name) {
 }
 
 // Allocation + initialization 
-I2CDevice* i2c_device_create(char* i2c_device_file_name) {
-	I2CDevice* device_p = (I2CDevice*)malloc(sizeof(I2CDevice));
+I2C* i2c_create(char* i2c_device_file_name) {
+	I2C* device_p = (I2C*)malloc(sizeof(I2C));
 	i2c_device_init(device_p, i2c_device_file_name);
 	return device_p;
 }
@@ -60,7 +54,7 @@ I2CDevice* i2c_device_create(char* i2c_device_file_name) {
 // 	return (-1);
 // }
 
-uint32_t i2c_write_short(I2CDevice* self, uint8_t address, uint8_t command, uint16_t data)
+uint32_t i2c_write_short(I2C* self, uint8_t address, uint8_t command, uint16_t data)
 {
 	uint8_t buffer[3];
 
@@ -105,7 +99,7 @@ uint32_t i2c_write_short(I2CDevice* self, uint8_t address, uint8_t command, uint
 // 	return (-1);
 // }
 
-uint16_t i2c_read_short(I2CDevice* self, uint8_t address, uint8_t command)
+uint16_t i2c_read_short(I2C* self, uint8_t address, uint8_t command)
 {
 	uint16_t buffer;
 
