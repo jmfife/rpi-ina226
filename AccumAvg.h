@@ -19,7 +19,7 @@
 
 struct AccumAvg;
 typedef struct AccumAvg AccumAvg;
-struct AccumAvg* AccumAvg_create();
+AccumAvg* AccumAvg_create();
 void AccumAvg_destroy(AccumAvg* self);
 void AccumAvg_accum(AccumAvg* self, double t, float val);
 float AccumAvg_avg(AccumAvg* self);

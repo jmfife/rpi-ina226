@@ -27,30 +27,40 @@
 #include <errno.h>
 #include <byteswap.h>
 #include <linux/i2c-dev.h>
-#include <linux/i2c.h>
+#include <i2c.h>
 #include <sys/ioctl.h>
 
-uint32_t i2c_init(char *devname)
-{
-	int handle;
+struct I2CDeviceStruct {
+    uint32_t i2c_device_file_handle;
+};
 
-	if ((handle = open(devname, O_RDWR)) == -1) {
-		printf("Failed to open I2C port. Error = %d\r\n", errno);
+// Allocation + initialization 
+void i2c_device_init(I2CDevice* self, char* i2c_device_file_name) {
+	uint32_t handle;
+	   if ((handle = open(i2c_device_file_name, O_RDWR)) == -1) {
+		fprintf( stderr, "Failed to open I2C port %s. Error = %d.\r\n", 
+			i2c_device_file_name, errno);
 		exit(1);
 	}
-
-	return (handle);
+	self->i2c_device_file_handle = handle;
 }
 
-uint32_t i2c_write_byte(uint32_t i2c_master_port, uint8_t address, uint8_t command, uint8_t data)
-{
-	// NOT IMPLEMENTED
-	printf("NOT IMPLEMENTED\r\n");
-	exit(1);
-	return (-1);
+// Allocation + initialization 
+I2CDevice* i2c_device_create(char* i2c_device_file_name) {
+	I2CDevice* device_p = (I2CDevice*)malloc(sizeof(I2CDevice));
+	i2c_device_init(device_p, i2c_device_file_name);
+	return device_p;
 }
 
-uint32_t i2c_write_short(uint32_t i2c_master_port, uint8_t address, uint8_t command, uint16_t data)
+// uint32_t i2c_write_byte(uint32_t i2c_master_port, uint8_t address, uint8_t command, uint8_t data)
+// {
+// 	// NOT IMPLEMENTED
+// 	printf("NOT IMPLEMENTED\r\n");
+// 	exit(1);
+// 	return (-1);
+// }
+
+uint32_t i2c_write_short(I2CDevice* self, uint8_t address, uint8_t command, uint16_t data)
 {
 	uint8_t buffer[3];
 
@@ -71,7 +81,7 @@ uint32_t i2c_write_short(uint32_t i2c_master_port, uint8_t address, uint8_t comm
 	msgset[0].msgs = msgs;
 	msgset[0].nmsgs = 1;
 
-	if (ioctl(i2c_master_port, I2C_RDWR, &msgset) < 0) {
+	if (ioctl(self->i2c_device_file_handle, I2C_RDWR, &msgset) < 0) {
 		printf("Write I2C failed\r\n");
 		exit(1);
 	}
@@ -79,23 +89,23 @@ uint32_t i2c_write_short(uint32_t i2c_master_port, uint8_t address, uint8_t comm
 	return (0);
 }
 
-uint32_t i2c_write_buf(uint32_t i2c_master_port, uint8_t address, uint8_t command, uint8_t *data, uint8_t len)
-{
-	// NOT IMPLEMENTED
-	printf("NOT IMPLEMENTED\r\n");
-	exit(1);
-	return (-1);
-}
+// uint32_t i2c_write_buf(uint32_t i2c_master_port, uint8_t address, uint8_t command, uint8_t *data, uint8_t len)
+// {
+// 	// NOT IMPLEMENTED
+// 	printf("NOT IMPLEMENTED\r\n");
+// 	exit(1);
+// 	return (-1);
+// }
 
-uint8_t i2c_read_byte(uint32_t i2c_master_port, uint8_t address, uint8_t command)
-{
-	// NOT IMPLEMENTED
-	printf("NOT IMPLEMENTED\r\n");
-	exit(1);
-	return (-1);
-}
+// uint8_t i2c_read_byte(uint32_t i2c_master_port, uint8_t address, uint8_t command)
+// {
+// 	// NOT IMPLEMENTED
+// 	printf("NOT IMPLEMENTED\r\n");
+// 	exit(1);
+// 	return (-1);
+// }
 
-uint16_t i2c_read_short(uint32_t i2c_master_port, uint8_t address, uint8_t command)
+uint16_t i2c_read_short(I2CDevice* self, uint8_t address, uint8_t command)
 {
 	uint16_t buffer;
 
@@ -118,7 +128,7 @@ uint16_t i2c_read_short(uint32_t i2c_master_port, uint8_t address, uint8_t comma
 	msgset[0].msgs = msgs;
 	msgset[0].nmsgs = 2;
 
-	if (ioctl(i2c_master_port, I2C_RDWR, &msgset) < 0) {
+	if (ioctl(self->i2c_device_file_handle, I2C_RDWR, &msgset) < 0) {
 		printf("Read I2C failed\r\n");
 		exit(1);
 	}
