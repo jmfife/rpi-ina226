@@ -2,21 +2,45 @@ CC=gcc
 LD=gcc
 CFLAGS=-g3 -Wall
 LDFLAGS=-lm
+ALL = ina226_monitor ina226_emulate test
 
-ifeq ($(detected_OS),Darwin)        # Mac OS X
-    CFLAGS += -D OSX
-	LDFLAGS += -largp -L /usr/local/opt/argp-standalone/lib
-	ALL = ina226_emulate test
-endif
-ifeq ($(detected_OS),Linux)			# Linux
-    CFLAGS += -D LINUX
-	ALL = ina226_monitor ina226_emulate test
+ifeq ($(OS),Windows_NT)
+    CCFLAGS += -D WIN32
+    ifeq ($(PROCESSOR_ARCHITEW6432),AMD64)
+        CCFLAGS += -D AMD64
+    else
+        ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
+            CCFLAGS += -D AMD64
+        endif
+        ifeq ($(PROCESSOR_ARCHITECTURE),x86)
+            CCFLAGS += -D IA32
+        endif
+    endif
+else
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Linux)
+        CCFLAGS += -D LINUX
+		ALL += ina226_monitor
+    endif
+    ifeq ($(UNAME_S),Darwin)
+        CCFLAGS += -D OSX
+		LDFLAGS += -largp -L /usr/local/opt/argp-standalone/lib
+    endif
+    UNAME_P := $(shell uname -p)
+    ifeq ($(UNAME_P),x86_64)
+        CCFLAGS += -D AMD64
+    endif
+    ifneq ($(filter %86,$(UNAME_P)),)
+        CCFLAGS += -D IA32
+    endif
+    ifneq ($(filter arm%,$(UNAME_P)),)
+        CCFLAGS += -D ARM
+    endif
 endif
 
 .PHONY: clean
 
 all: $(ALL)
-	echo detected_OS: $(detected_OS)
 
 ina226_monitor: ina226_monitor.o ina226.o i2c.o AccumAvg.o 
 	$(CC) -o ina226_monitor ina226_monitor.o ina226.o i2c.o AccumAvg.o $(LDFLAGS)
