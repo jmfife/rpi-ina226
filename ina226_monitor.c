@@ -8,12 +8,10 @@
 #include <argp.h>
 #include <stdbool.h>
 #include <sys/time.h>
-#include "AccumAvg.h"
 #include <limits.h>
-// #include "i2c.h"
 #include "ina226.h"
+#include "AccumAvg.h"
 
-int fd;
 
 const char *argp_program_version = "ina226 2.0";
 const char *argp_program_bug_address = "https://github.com/jmfife/rpi-ina226";
@@ -67,21 +65,6 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state) {
 }
 
 static struct argp argp = { options, parse_opt, args_doc, doc, 0, 0, 0 };
-
-
-// R of shunt resistor in ohm. Max current in Amp
-// void ina226_calibrate(float r_shunt, float max_current) {
-// 	current_lsb = max_current / (1 << 15);
-// 	float calib = 0.00512 / (current_lsb * r_shunt);
-// 	uint16_t calib_reg = (uint16_t) floorf(calib);
-// 	current_lsb = 0.00512 / (r_shunt * calib_reg);
-
-// 	//printf("LSB %f\n",current_lsb);
-// 	//printf("Calib %f\n",calib);
-// 	//printf("Calib R%#06x / %d\n",calib_reg,calib_reg);
-
-// 	write16(fd,INA226_REG_CALIBRATION, calib_reg);
-// }
 
 int main(int argc, char *argv[]) {
 	struct arguments arguments;
@@ -166,7 +149,6 @@ int main(int argc, char *argv[]) {
 			rawtimeval_sec = (double)rawtimeval.tv_sec + (double)rawtimeval.tv_usec / 1e6;
 			sprintf(datastring, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f", voltage, current, power);
 			if (arguments.interval_mode) {
-				//printf("{\"time\": %.3f, %s}\n", rawtimeval_sec, datastring);
 				// Handle Interval
                 AccumAvg_accum(voltage_avg, rawtimeval_sec, voltage);
                 AccumAvg_accum(current_avg, rawtimeval_sec, current);

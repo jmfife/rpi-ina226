@@ -19,11 +19,10 @@
  */
 
 
-// float current_lsb, float r_ohms
-
-
 #ifndef MAIN_INA226_H_
 #define MAIN_INA226_H_
+
+#include <stdint.h>
 
 struct INA226Struct;
 typedef struct INA226Struct INA226;
