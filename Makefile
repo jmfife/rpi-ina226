@@ -2,7 +2,7 @@ CC=gcc
 LD=gcc
 CFLAGS=-g3 -Wall
 LDFLAGS=-lm
-ALL = ina226_monitor ina226_emulate test
+ALL = ina226_emulate test
 
 ifeq ($(OS),Windows_NT)
     CCFLAGS += -D WIN32
