@@ -45,7 +45,8 @@ with everything else disconnected. In my case it was 0.1 Ohm.
 The INA226 chip measures the voltage drop between V+ and V- to calculate the current by using Ohm's law.
 
 Some parameters you may want to change in the code:
-* I2C address of the chip, 0x40 by default. Use `i2cdetect -y 1` to find out.
+* I2C address of the chip, 0x40 by default. Use `i2cdetect -y 1` (from `i2c-tools` which you installed
+in an earlier step above) to find out.
 * Shunt resistor value.
 * Max expected current, to set the resolution of the ADC.
 * Time measuring the Bus Voltage (Load) and Shunt Voltage ( Current ). More time is smoother and less is quicker.

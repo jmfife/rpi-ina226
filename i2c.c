@@ -99,7 +99,7 @@ uint32_t i2c_write_short(I2C* self, uint8_t address, uint8_t command, uint16_t d
 // 	return (-1);
 // }
 
-uint16_t i2c_read_short(I2C* self, uint8_t address, uint8_t command)
+uint16_t i2c_read_short(I2C* self_p, uint8_t address, uint8_t command)
 {
 	uint16_t buffer;
 
@@ -122,7 +122,7 @@ uint16_t i2c_read_short(I2C* self, uint8_t address, uint8_t command)
 	msgset[0].msgs = msgs;
 	msgset[0].nmsgs = 2;
 
-	if (ioctl(self->i2c_device_file_handle, I2C_RDWR, &msgset) < 0) {
+	if (ioctl(self_p->i2c_device_file_handle, I2C_RDWR, &msgset) < 0) {
 		printf("Read I2C failed\r\n");
 		exit(1);
 	}
@@ -130,7 +130,7 @@ uint16_t i2c_read_short(I2C* self, uint8_t address, uint8_t command)
 	return(bswap_16(buffer));
 }
 
-uint32_t i2c_read_buf(uint32_t i2c_master_port, uint8_t address, uint8_t command, uint8_t *buffer, uint8_t len)
+uint32_t i2c_read_buf(I2C* self_p, uint8_t address, uint8_t command, uint8_t *buffer, uint8_t len)
 {
 	//uint16_t buffer;
 
@@ -153,7 +153,7 @@ uint32_t i2c_read_buf(uint32_t i2c_master_port, uint8_t address, uint8_t command
 	msgset[0].msgs = msgs;
 	msgset[0].nmsgs = 2;
 
-	if (ioctl(i2c_master_port, I2C_RDWR, &msgset) < 0) {
+	if (ioctl(self_p->i2c_device_file_handle, I2C_RDWR, &msgset) < 0) {
 		printf("Read I2C failed\r\n");
 		exit(1);
 	}
