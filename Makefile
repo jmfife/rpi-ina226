@@ -6,16 +6,16 @@ LDFLAGS=-lm
 ifeq ($(detected_OS),Darwin)        # Mac OS X
     CFLAGS += -D OSX
 	LDFLAGS += -largp -L /usr/local/opt/argp-standalone/lib
-	EXECUTABLES=ina226_emulate test
+	ALL = ina226_emulate test
 endif
 ifeq ($(detected_OS),Linux)			# Linux
     CFLAGS += -D LINUX
-	EXECUTABLES=ina226_emulate test
+	ALL = ina226_monitor ina226_emulate test
 endif
 
 .PHONY: clean
 
-all: ina226_monitor ina226_emulate test
+all: $(ALL)
 	echo detected_OS: $(detected_OS)
 
 ina226_monitor: ina226_monitor.o ina226.o i2c.o AccumAvg.o 
