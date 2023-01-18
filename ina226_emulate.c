@@ -1,3 +1,12 @@
+/** INA226 Emulate
+*	Copyright (C) 2022 John Michael Fife
+*
+*	Emulate INA226 Monitor - produce random voltage, current,
+*	and power measurements, and write to stdout.
+*
+*	For any OS.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>

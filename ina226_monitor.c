@@ -1,3 +1,12 @@
+/** INA226 Monitor
+*	Copyright (C) 2022 John Michael Fife
+*
+*	Monitor INA226 voltage, current, and power measurements,
+*	and write to stdout.
+*
+*	For Linux OS only.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -68,12 +77,14 @@ static struct argp argp = { options, parse_opt, args_doc, doc, 0, 0, 0 };
 
 int main(int argc, char *argv[]) {
 	struct arguments arguments;
+
+	// DEFAULTS
 	arguments.device_file = "/dev/i2c-1";
-	arguments.current_lsb = 0.001f;				// default = 1 mA/bit
-	arguments.slave_address = 0x40;				// default address for INA226
-	arguments.shunt_resistance_ohms = 0.0015f;	// default 1.5 mOhms
+	arguments.current_lsb = 0.002f;					// default = 1 mA/bit - see datasheet eq. 2
+	arguments.slave_address = 0x40;					// default address for INA226
+	arguments.shunt_resistance_ohms = 0.009055f;	// from shunt calibration on 2020-04-19
 	arguments.emulate_mode = false;
-	arguments.samples_per_hour = 1800;
+	arguments.samples_per_hour = 360;
 	arguments.interval_mode = false;
 	arguments.intervals_per_hour = (int) 60;
 	arguments.samples_per_interval = (int) 12;	
@@ -138,7 +149,8 @@ int main(int argc, char *argv[]) {
 				voltage = ina226_voltage(ina226_p);
 				current = ina226_current(ina226_p);
 				power = ina226_power(ina226_p);
-				// power = current * voltage;		// use this because the INA226 does not represent power as a signed value
+				// next line because INA226 returns abs(power)
+				if (current < 0) power = -power;
 			}
 			else {
 				voltage = 12.0 + (float) rand() / RAND_MAX - 0.5;

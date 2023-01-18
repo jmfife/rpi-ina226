@@ -1,5 +1,9 @@
-// Accumulate and time-average values of interval data samples 
-// Assumes timestamps are end - of - interval (EoI)
+/** AccumAvg - Accumulate and time-average values of interval data samples
+ *  Copyright (C) 2022 John Michael Fife
+ *
+ *  Assumes timestamps are end - of - interval (EoI).
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "AccumAvg.h"

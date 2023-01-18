@@ -1,21 +1,11 @@
-#pragma once
-
-/**
- * Accumulator for calculating averages over time intervals
+/** AccumAvg - Accumulate and time-average values of interval data samples
+ *  Copyright (C) 2022 John Michael Fife
+ *
+ *  Assumes timestamps are end - of - interval (EoI).
  */
-// class AccumAvg {
-//   private:
-// 	double t_initial;
-// 	double t_last;
-// 	float accum_total;
-// 	int initialized;
-//   public:
-// 	AccumAvg();
-// 	void accum(double t, float val);
-// 	float avg();
-// 	void reset();
-// 	void reset(double t);
-// };
+
+#ifndef ACCUMAVG_H_
+#define ACCUMAVG_H_ 
 
 struct AccumAvg;
 typedef struct AccumAvg AccumAvg;
@@ -26,3 +16,4 @@ float AccumAvg_avg(AccumAvg* self);
 void AccumAvg_reset(AccumAvg* self);
 void AccumAvg_reset2(AccumAvg* self, double t);
 	
+#endif

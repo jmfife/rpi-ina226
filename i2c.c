@@ -1,14 +1,12 @@
-/*
- * I2C - Simple I2C Interface
- * Copyright (C) 2022 John Michael Fife
+/** I2C - Simple I2C Interface
+ *  Copyright (C) 2022 John Michael Fife
  *
- * Incomplete code forked from https://github.com/craigpeacock/Linux_I2C 
- * Jan 15 2022.
+ *  Incomplete code forked from https://github.com/craigpeacock/Linux_I2C 
+ *  Jan 15 2022.
  *
- * Made multi-instance following 
- * "Test Driven Development for Embedded C" by
- * James W. Grenning.
- *
+ *  Made multi-instance following 
+ *  "Test Driven Development for Embedded C" by James W. Grenning,
+ *  and other similar Ansi C OOP suggestions.
  */
 
 #include <stdlib.h>
