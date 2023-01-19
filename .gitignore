@@ -1,6 +1,7 @@
 ina226_monitor
 ina226_emulate
-test_accumavg
+test_accum_avg
+test_accum_mean
 .idea
 *.swp
 *.o
