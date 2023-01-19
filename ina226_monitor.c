@@ -81,9 +81,9 @@ int main(int argc, char *argv[]) {
 	// DEFAULTS
 	arguments.device_file = "/dev/i2c-1";
 	// for INA226 settings, see INA226 data sheet
-	arguments.current_lsb = 0.002f;					// default = 2 mA/bit -> max current 65.54A
-	arguments.slave_address = 0x40;					// default address for INA226
-	arguments.shunt_resistance_ohms = 0.00150f;		// from shunt re-cal on 2023-01-18
+	arguments.current_lsb = 0.002f;				// default = 2 mA/bit -> max current 65.54A
+	arguments.slave_address = 0x40;				// default address for INA226
+	arguments.shunt_resistance_ohms = 0.00150f;	// from shunt re-calibration on 2023-01-18
 	arguments.emulate_mode = false;
 	arguments.samples_per_hour = 360;
 	arguments.interval_mode = false;
