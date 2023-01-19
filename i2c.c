@@ -26,7 +26,7 @@ struct I2CStruct {
     uint32_t i2c_device_file_handle;
 };
 
-// Initialization 
+/* Initialize an I2C Bus instance.  */
 void i2c_device_init(I2C* self, char* i2c_device_file_name) {
 	uint32_t handle;
 	   if ((handle = open(i2c_device_file_name, O_RDWR)) == -1) {
@@ -37,7 +37,7 @@ void i2c_device_init(I2C* self, char* i2c_device_file_name) {
 	self->i2c_device_file_handle = handle;
 }
 
-// Allocation + initialization 
+/* Create an I2C Bus instance.  */
 I2C* i2c_create(char* i2c_device_file_name) {
 	I2C* device_p = (I2C*)malloc(sizeof(I2C));
 	i2c_device_init(device_p, i2c_device_file_name);
@@ -52,6 +52,7 @@ I2C* i2c_create(char* i2c_device_file_name) {
 // 	return (-1);
 // }
 
+/* Write a 16-bit value to I2C.  */
 uint32_t i2c_write_short(I2C* self, uint8_t address, uint8_t command, uint16_t data)
 {
 	uint8_t buffer[3];
@@ -97,6 +98,7 @@ uint32_t i2c_write_short(I2C* self, uint8_t address, uint8_t command, uint16_t d
 // 	return (-1);
 // }
 
+/* Read a single 16-bit I2C value.  */
 uint16_t i2c_read_short(I2C* self_p, uint8_t address, uint8_t command)
 {
 	uint16_t buffer;
@@ -128,7 +130,8 @@ uint16_t i2c_read_short(I2C* self_p, uint8_t address, uint8_t command)
 	return(bswap_16(buffer));
 }
 
-uint32_t i2c_read_buf(I2C* self_p, uint8_t address, uint8_t command, uint8_t *buffer, uint8_t len)
+/* Read I2C values and store in a user-provided buffer.  */
+uint32_t i2c_read_buf(I2C* self_p, uint8_t address, uint8_t command, uint8_t* buffer, uint8_t len)
 {
 	//uint16_t buffer;
 

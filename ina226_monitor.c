@@ -19,7 +19,7 @@
 #include <sys/time.h>
 #include <limits.h>
 #include "ina226.h"
-#include "AccumAvg.h"
+#include "accum_mean.h"
 
 
 const char *argp_program_version = "ina226 2.0";
@@ -80,7 +80,8 @@ int main(int argc, char *argv[]) {
 
 	// DEFAULTS
 	arguments.device_file = "/dev/i2c-1";
-	arguments.current_lsb = 0.002f;					// default = 1 mA/bit - see datasheet eq. 2
+	// for INA226 settings, see INA226 data sheet
+	arguments.current_lsb = 0.002f;					// default = 2 mA/bit -> max current 65.54A
 	arguments.slave_address = 0x40;					// default address for INA226
 	arguments.shunt_resistance_ohms = 0.009055f;	// from shunt calibration on 2020-04-19
 	arguments.emulate_mode = false;
@@ -92,9 +93,9 @@ int main(int argc, char *argv[]) {
 	argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
 	float voltage, current, power;
-    AccumAvg* voltage_avg = AccumAvg_create();
-    AccumAvg* current_avg = AccumAvg_create();
-    AccumAvg* power_avg = AccumAvg_create();
+    AccumMean* voltage_mean = accum_mean_create();
+    AccumMean* current_mean = accum_mean_create();
+    AccumMean* power_mean = accum_mean_create();
 	int firstinterval = true;
 
 	struct timeval rawtimeval;
@@ -121,22 +122,11 @@ int main(int argc, char *argv[]) {
 	// printf("seconds_per_sample = %f\n", seconds_per_sample);
 	current_subinterval = 0; 	// starting subinterval just needs to be != the true current interval
 	if(!(arguments.emulate_mode)) {
-		// // printf("Initializing I2C device at addr 0x%02X on %s \r\n", i2caddr, devname);
-		// hI2C = i2c_init(devname);
-		// // printf("Initalizing INA226.\r\n");
-		// i2caddr += 1; // JUST TO STOP WARNING
-		// ina226_init(hI2C);
 		ina226_p = ina226_create(arguments.device_file, arguments.slave_address,
 			arguments.current_lsb, arguments.shunt_resistance_ohms);
-		// printf("INA226 Initialized.\r\n");
 	}
 
-	// printf("Interval Mode: %d\r\n", arguments.interval_mode);
-
 	for (;;) {
-		//ina226_configure(INA226_TIME_8MS, INA226_TIME_8MS, INA226_AVERAGES_16, INA226_MODE_SHUNT_BUS_TRIGGERED);
-		//ina226_wait();
-
 		gettimeofday(&rawtimeval, NULL);
 		rawtimeval_sec = (double)rawtimeval.tv_sec + (double)rawtimeval.tv_usec / 1.0e6;
 		// doing this a little sketchy - should really used fixed-width types here
@@ -162,20 +152,20 @@ int main(int argc, char *argv[]) {
 			sprintf(datastring, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f", voltage, current, power);
 			if (arguments.interval_mode) {
 				// Handle Interval
-                AccumAvg_accum(voltage_avg, rawtimeval_sec, voltage);
-                AccumAvg_accum(current_avg, rawtimeval_sec, current);
-                AccumAvg_accum(power_avg, rawtimeval_sec, power);
+                accum_mean_accum(voltage_mean, rawtimeval_sec, voltage);
+                accum_mean_accum(current_mean, rawtimeval_sec, current);
+                accum_mean_accum(power_mean, rawtimeval_sec, power);
 				if ((current_subinterval + 1) % arguments.samples_per_interval == 0) {
 					if (!firstinterval) {
 						sprintf(datastring_interval, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f",
-							AccumAvg_avg(voltage_avg), AccumAvg_avg(current_avg), AccumAvg_avg(power_avg));
+							accum_mean_yield(voltage_mean), accum_mean_yield(current_mean), accum_mean_yield(power_mean));
                         printf("{\"time\": %lu, \"fields\": {%s}}\n", \
                             (unsigned long) (rawtimeval_sec*1e9), datastring_interval);
 					}
 					fflush(NULL);
-					AccumAvg_reset2(voltage_avg, rawtimeval_sec);
-					AccumAvg_reset2(current_avg, rawtimeval_sec);
-					AccumAvg_reset2(power_avg, rawtimeval_sec);
+					accum_mean_reset(voltage_mean);
+					accum_mean_reset(current_mean);
+					accum_mean_reset(power_mean);
 					firstinterval = false;
 				}
 				fflush(NULL);

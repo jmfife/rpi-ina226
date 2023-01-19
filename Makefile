@@ -44,35 +44,44 @@ endif
 
 all: $(ALL)
 
-ina226_monitor: ina226_monitor.o ina226.o i2c.o AccumAvg.o
+ina226_monitor: ina226_monitor.o ina226.o i2c.o accum_mean.o
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
-ina226_emulate: ina226_emulate.o AccumAvg.o
+ina226_emulate: ina226_emulate.o accum_mean.o
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
-ina226_monitor.o: ina226_monitor.c ina226.h
+ina226_monitor.o: ina226_monitor.c ina226.h accum_mean.h
 
-ina226_emulate.o: ina226_emulate.c AccumAvg.h
+ina226_emulate.o: ina226_emulate.c accum_mean.h
 
-AccumAvg.o: AccumAvg.c AccumAvg.h
+accum_avg.o: accum_avg.c accum_avg.h
+
+accum_mean.o: accum_mean.c accum_mean.h
 
 ina226.o: ina226.c ina226.h i2c.h
 
 i2c.o: i2c.c i2c.h
 
-test_accumavg.o: test_accumavg.c AccumAvg.h tester.h
+test_accum_avg.o: test_accum_avg.c accum_avg.h tester.h
 
-test_accumavg: test_accumavg.o AccumAvg.o tester.o
+test_accum_avg: test_accum_avg.o accum_avg.o tester.o
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+test_accum_mean.o: test_accum_mean.c accum_mean.h tester.h
+
+test_accum_mean: test_accum_mean.o accum_mean.o tester.o
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 clean:
 	rm -f ina226_monitor
 	rm -f ina226_emulate
-	rm -f test_accumavg
+	rm -f test_accum_avg
+	rm -f test_accum_mean
 	rm -f *.o
 
-test: test_accumavg
-	./test_accumavg 
+test: test_accum_avg test_accum_mean
+	./test_accum_avg
+	./test_accum_mean
 	@echo OK!
 
 tester.o: tester.c tester.h

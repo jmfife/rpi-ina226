@@ -23,7 +23,7 @@ struct INA226Struct {
 	float current_lsb;
 };
 
-// Initialization 
+/* Initialize INA226 Instance */
 void ina226_init(INA226* self_p, char* device_file, uint32_t slave_address,
 	float current_lsb, float shunt_resistance_ohms) {
 	self_p->i2c_p = i2c_create(device_file);
@@ -42,7 +42,7 @@ void ina226_init(INA226* self_p, char* device_file, uint32_t slave_address,
 	sleep(1);	// let the chip initialize
 }
 
-// Allocation + initialization 
+/* Create INA226 device instance. */
 INA226* ina226_create(char* device_file, uint32_t slave_address,
 	float current_lsb, float shunt_resistance_ohms) {
 	INA226* ina226_p = (INA226*)malloc(sizeof(INA226));
@@ -50,6 +50,7 @@ INA226* ina226_create(char* device_file, uint32_t slave_address,
 	return ina226_p;
 }
 
+/* Read INA225 voltage register and return measured voltage in Volts.  */
 float ina226_voltage(INA226* self_p)
 {
 	uint16_t iBusVoltage;
@@ -62,6 +63,7 @@ float ina226_voltage(INA226* self_p)
 	return (fBusVoltage);
 }
 
+/* Read INA225 current register and return measured current in Amperes.  */
 float ina226_current(INA226* self_p)
 {
 	int16_t iCurrent;
@@ -75,6 +77,7 @@ float ina226_current(INA226* self_p)
 	return (fCurrent);
 }
 
+/* Read INA225 power register and return measured power in Watts.  */
 float ina226_power(INA226* self_p)
 {
 	int16_t iPower;

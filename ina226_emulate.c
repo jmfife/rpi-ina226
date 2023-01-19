@@ -18,7 +18,7 @@
 #include <stdbool.h>
 #include <sys/time.h>
 #include <limits.h>
-#include "AccumAvg.h"
+#include "accum_mean.h"
 
 #define INA226_ADDRESS 0x40
 
@@ -82,9 +82,9 @@ int main(int argc, char* argv[]) {
 	argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
     float voltage, current, power;
-    AccumAvg* voltage_avg = AccumAvg_create();
-    AccumAvg* current_avg = AccumAvg_create();
-    AccumAvg* power_avg = AccumAvg_create();
+    AccumMean* voltage_avg = accum_mean_create();
+    AccumMean* current_avg = accum_mean_create();
+    AccumMean* power_avg = accum_mean_create();
 	int firstinterval = true;
 
 	struct timeval rawtimeval;
@@ -130,20 +130,20 @@ int main(int argc, char* argv[]) {
             sprintf(datastring, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f", voltage, current, power);
             if (arguments.interval_mode) {
                 // Handle Interval
-                AccumAvg_accum(voltage_avg, rawtimeval_sec, voltage);
-                AccumAvg_accum(current_avg, rawtimeval_sec, current);
-                AccumAvg_accum(power_avg, rawtimeval_sec, power);
+                accum_mean_accum(voltage_avg, rawtimeval_sec, voltage);
+                accum_mean_accum(current_avg, rawtimeval_sec, current);
+                accum_mean_accum(power_avg, rawtimeval_sec, power);
                 if ((current_subinterval + 1) % arguments.samples_per_interval == 0) {
                     if (!firstinterval) {
                         sprintf(datastring_interval, "\"V\": %.3f, \"I\": %.3f, \"P\": %.1f",
-                            AccumAvg_avg(voltage_avg), AccumAvg_avg(current_avg), AccumAvg_avg(power_avg));
+                            accum_mean_yield(voltage_avg), accum_mean_yield(current_avg), accum_mean_yield(power_avg));
                         printf("{\"time\": %lu, \"fields\": {%s}}\n", \
                             (unsigned long) (rawtimeval_sec*1e9), datastring_interval);
                     }
                     fflush(NULL);
-                    AccumAvg_reset2(voltage_avg, rawtimeval_sec);
-                    AccumAvg_reset2(current_avg, rawtimeval_sec);
-                    AccumAvg_reset2(power_avg, rawtimeval_sec);
+                    accum_mean_reset(voltage_avg);
+                    accum_mean_reset(current_avg);
+                    accum_mean_reset(power_avg);
                     firstinterval = false;
                 }
                 fflush(NULL);
