@@ -9,7 +9,7 @@
 #include "accum_mean.h"
 
 struct AccumMean {
-	uint n;				// number of samples accumulated
+	uint32_t n;			// number of samples accumulated
 	float accum_total;	// sum total of sample values
 };
 
