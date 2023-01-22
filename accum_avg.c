@@ -2,7 +2,7 @@
  *  Copyright (C) 2022 John Michael Fife
  *
  *  Assumes timestamps are end - of - interval (EoI).
- *  Average accumulated value is duration-weighted based on all of the
+ *  Average accumulated value is time- or duration-weighted based on all of the
  *  measurements made during the accumulation interval.
  */
 
