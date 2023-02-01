@@ -71,9 +71,10 @@ change it by reversing the shunt V+ and V- leads.
 
 ```
 $ ./ina226_monitor
-{"time":1674069620002733824,"fields":{"V":13.345,"I":0.23,"P":3.1},"measurement":"ina226_0001"}
-{"time":1674069630002486016,"fields":{"V":13.345,"I":0.234,"P":3.1},"measurement":"ina226_0001"}
-{"time":1674069640002721024,"fields":{"V":13.35,"I":0.23,"P":3.1},"measurement":"ina226_0001"}
+{"time":1674069620002733824,"fields":{"V":13.345,"I":0.23,"P":3.1}}
+{"time":1674069630002486016,"fields":{"V":13.345,"I":0.234,"P":3.1}}
+{"time":1674069640002721024,"fields":{"V":13.35,"I":0.23,"P":3.1}}
+...
 ```
 
 ## How to Compile and run the emulator (does not require any special hardware)
@@ -87,14 +88,27 @@ $ brew install argp-standalone
 Then, build and run:
 
 ```
-$ make ina226_emulate
-gcc -c -o ina226-emulate.o ina226-emulate.c 
-gcc -c -o AccumAvg.o AccumAvg.c
-gcc -o ina226-emulate ina226-emulate.o AccumAvg.o -lm -largp -L /usr/local/opt/argp-standalone/lib 
-./ina226_emulate
-{"time": 1674070290000130816, "fields": {"V": 12.288, "I": 2.970, "P": 36.5}}
-{"time": 1674070292000098048, "fields": {"V": 12.240, "I": 3.026, "P": 37.0}}
-{"time": 1674070294000125952, "fields": {"V": 11.590, "I": 2.976, "P": 34.5}}
+$ make
+gcc -g3 -Wall   -c -o ina226_emulate.o ina226_emulate.c
+gcc -g3 -Wall   -c -o accum_mean.o accum_mean.c
+gcc -o ina226_emulate ina226_emulate.o accum_mean.o -lm 
+gcc -g3 -Wall   -c -o test_accum_avg.o test_accum_avg.c
+gcc -g3 -Wall   -c -o accum_avg.o accum_avg.c
+gcc -g3 -Wall   -c -o tester.o tester.c
+gcc -o test_accum_avg test_accum_avg.o accum_avg.o tester.o -lm 
+gcc -g3 -Wall   -c -o test_accum_mean.o test_accum_mean.c
+gcc -o test_accum_mean test_accum_mean.o accum_mean.o tester.o -lm 
+./test_accum_avg
+./test_accum_mean
+OK!
+gcc -g3 -Wall   -c -o ina226_monitor.o ina226_monitor.c
+gcc -g3 -Wall   -c -o ina226.o ina226.c
+gcc -g3 -Wall   -c -o i2c.o i2c.c
+gcc -o ina226_monitor ina226_monitor.o ina226.o i2c.o accum_mean.o -lm 
+$ ./ina226_emulate 
+{"time": 1675212548000067072, "fields": {"V": 11.518, "I": 3.033, "P": 34.9}}
+{"time": 1675212550000062976, "fields": {"V": 12.449, "I": 2.953, "P": 36.8}}
+{"time": 1675212552000084992, "fields": {"V": 12.053, "I": 2.976, "P": 35.9}}
 ...
 ```
 
@@ -102,7 +116,8 @@ gcc -o ina226-emulate ina226-emulate.o AccumAvg.o -lm -largp -L /usr/local/opt/a
 
 ```
 $ make test
-./test_accumavg 
+./test_accum_avg
+./test_accum_mean
 OK!
 ```
 
